@@ -1,0 +1,120 @@
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Backgrounds ── */
+    --background: 210 20% 98%;       /* near-white #f8f9fb */
+    --foreground: 220 25% 12%;       /* deep slate */
+
+    --card: 0 0% 100%;               /* pure white */
+    --card-foreground: 220 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    /* ── Traditional Chinese Vermilion Red ── */
+    /* Deep, muted red: #B52A2A — scholarly, not garish */
+    --primary: 4 68% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 220 25% 30%;
+
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 13% 52%;
+
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 25% 12%;
+
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    --ring: 4 68% 43%;
+
+    --radius: 0.625rem;              /* 10px — refined, not overly round */
+  }
+
+  .dark {
+    --background: 220 18% 10%;
+    --foreground: 210 20% 93%;
+
+    --card: 220 18% 13%;
+    --card-foreground: 210 20% 93%;
+
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 20% 93%;
+
+    --primary: 4 65% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 210 20% 93%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 16% 55%;
+
+    --accent: 220 14% 18%;
+    --accent-foreground: 210 20% 93%;
+
+    --destructive: 0 60% 38%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 22%;
+    --input: 220 14% 22%;
+    --ring: 4 65% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .font-chinese {
+    font-family: 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes float-slow {
+  0%   { transform: translateY(0px)   rotate(0deg);   opacity: var(--float-op, 0.06); }
+  50%  { transform: translateY(-14px) rotate(3deg);   opacity: calc(var(--float-op, 0.06) + 0.03); }
+  100% { transform: translateY(4px)   rotate(-2deg);  opacity: var(--float-op, 0.06); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-float-slow {
+  animation: float-slow var(--dur, 10s) ease-in-out var(--delay, 0s) infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease both;
+}
