@@ -4,10 +4,15 @@ import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { UserLayout } from '@/components/layout/UserLayout'
 import { DashboardPage } from '@/pages/user/DashboardPage'
 import { LearningPage } from '@/pages/user/LearningPage'
+import { PersonalizedLearningPage } from '@/pages/user/PersonalizedLearningPage'
 import { ExamPage } from '@/pages/user/ExamPage'
 import { VocabularyPage } from '@/pages/user/VocabularyPage'
+import { VocabularyTopicPage } from '@/pages/user/VocabularyTopicPage'
+import { VocabularyTopicDetailPage } from '@/pages/user/VocabularyTopicDetailPage'
+import { TopicFlashcardPage } from '@/pages/user/TopicFlashcardPage'
 import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
+import { AdaptivePracticePage } from '@/pages/user/AdaptivePracticePage'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { PrivateRoute } from './PrivateRoute'
 import { AdminRoute } from './AdminRoute'
@@ -46,6 +51,18 @@ export const router = createBrowserRouter([
             path: '/learning',
             element: <LearningPage />,
           },
+          {
+            path: '/learning-path',
+            element: <PersonalizedLearningPage />,
+          },
+          {
+            path: '/practice/adaptive',
+            element: <AdaptivePracticePage />,
+          },
+          {
+            path: '/practice',
+            element: <Navigate to="/practice/adaptive" replace />,
+          },
           // ── Vocabulary Routes ──
           {
             path: '/vocabulary',
@@ -65,15 +82,24 @@ export const router = createBrowserRouter([
           },
           {
             path: '/vocabulary/topic',
-            element: <VocabularyPage />,
+            element: <VocabularyTopicPage />,
+          },
+          {
+            path: '/vocabulary/topic/:slug',
+            element: <VocabularyTopicDetailPage />,
+          },
+          {
+            path: '/vocabulary/topic/:slug/flashcards',
+            element: <TopicFlashcardPage />,
           },
           {
             path: '/vocabulary/tips',
             element: <VocabularyPage />,
           },
           {
+            // Measure words now live on the daily vocabulary page and flashcards.
             path: '/vocabulary/quantifiers',
-            element: <VocabularyPage />,
+            element: <Navigate to="/vocabulary/daily" replace />,
           },
           // ── Other Features ──
           {

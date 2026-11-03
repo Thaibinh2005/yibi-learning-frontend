@@ -32,7 +32,6 @@ interface NavMenuItem {
 // ── Menu cấp 1 thông thường ─────────────────────────────────────
 const MAIN_NAV_ITEMS: NavMenuItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Khóa học', path: '/courses', icon: GraduationCap },
 ]
 
 const SECONDARY_NAV_ITEMS: NavMenuItem[] = [
@@ -47,7 +46,6 @@ const VOCABULARY_SUB_ITEMS = [
   { label: 'Sổ tay từ vựng', path: '/vocabulary/notebook' },
   { label: 'Từ vựng theo chủ đề', path: '/vocabulary/topic' },
   { label: 'Mẹo nhớ từ vựng', path: '/vocabulary/tips' },
-  { label: 'Lượng từ', path: '/vocabulary/quantifiers' },
 ]
 
 export const UserLayout: React.FC = () => {
@@ -60,9 +58,11 @@ export const UserLayout: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  // Trạng thái mở/đóng của cụm Collapsible Từ vựng
+  // Trạng thái mở/đóng của các cụm điều hướng xổ xuống
   const isInsideVocab = location.pathname.startsWith('/vocabulary')
   const [isVocabOpen, setIsVocabOpen] = useState(true)
+  const isInsideCourses = location.pathname === '/courses' || location.pathname.startsWith('/learning-path') || location.pathname.startsWith('/practice')
+  const [isCoursesOpen, setIsCoursesOpen] = useState(true)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +72,10 @@ export const UserLayout: React.FC = () => {
       setIsVocabOpen(true)
     }
   }, [location.pathname, isInsideVocab])
+
+  useEffect(() => {
+    if (isInsideCourses) setIsCoursesOpen(true)
+  }, [location.pathname, isInsideCourses])
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -108,6 +112,11 @@ export const UserLayout: React.FC = () => {
     const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === location.pathname)
     if (sub) return sub.label
     if (location.pathname === '/vocabulary') return 'Kho Từ Vựng HSK'
+    if (location.pathname === '/learning-path') return 'Lộ trình cá nhân'
+    if (location.pathname === '/courses') {
+      const level = Number(new URLSearchParams(location.search).get('hskLevel') || 1)
+      return `Giáo trình HSK ${level}`
+    }
 
     const main = MAIN_NAV_ITEMS.find((item) => item.path === location.pathname)
     if (main) return main.label
@@ -130,14 +139,14 @@ export const UserLayout: React.FC = () => {
 
       {/* ── Sidebar (Left Navigation) ─────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col overflow-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Top: Logo & Navigation */}
-        <div className="flex flex-col">
+        {/* Top: Logo (fixed) & Navigation (scrollable) */}
+        <div className="flex flex-col flex-1 min-h-0">
           {/* Logo Brand */}
-          <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
+          <div className="h-16 shrink-0 px-6 flex items-center justify-between border-b border-slate-100">
             <Link to="/dashboard" className="flex items-center gap-3 group">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105"
@@ -171,10 +180,13 @@ export const UserLayout: React.FC = () => {
           </div>
 
           {/* Navigation Items */}
-          <nav className="p-3.5 space-y-1.5" aria-label="Main Navigation">
+          <nav
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3.5 space-y-1.5 [scrollbar-width:thin]"
+            aria-label="Main Navigation"
+          >
             {/* Nhóm 1: Menu học tập chính */}
             <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 select-none">
-              Học tập & Lộ trình
+              TỔNG QUAN
             </div>
 
             {MAIN_NAV_ITEMS.map((item) => {
@@ -204,6 +216,57 @@ export const UserLayout: React.FC = () => {
                 </NavLink>
               )
             })}
+
+            {/* Nhóm Khóa học: lộ trình cá nhân và giáo trình HSK 1–6 */}
+            <div className="pt-3">
+              <div className="px-3 pb-1.5 text-xs font-semibold text-slate-400 tracking-wide uppercase select-none">
+                HỌC TẬP & LỘ TRÌNH
+              </div>
+              <button
+                type="button"
+                aria-expanded={isCoursesOpen}
+                onClick={() => setIsCoursesOpen((prev) => !prev)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors select-none ${isInsideCourses ? 'bg-rose-50/50' : 'hover:bg-slate-50'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-4 h-4 text-[#B52A2A]" />
+                  </div>
+                  <span className="text-base font-medium text-[#B52A2A]">Khóa học</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-[#B52A2A] transition-transform duration-200 ${isCoursesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isCoursesOpen && (
+                <div className="space-y-1 pl-4 pt-1.5 animate-fade-in">
+                  <Link
+                    to="/practice/adaptive"
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname.startsWith('/practice') ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
+                  >
+                    <div className="flex items-center">
+                      <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname.startsWith('/practice') ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
+                      <span>Luyện tập thích ứng</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-[#B52A2A]">SRS</span>
+                  </Link>
+
+                  <Link
+                    to="/learning-path"
+                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/learning-path' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
+                  >
+                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/learning-path' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
+                    <span>Lộ trình cá nhân</span>
+                  </Link>
+
+                  <Link
+                    to="/courses"
+                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/courses' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
+                  >
+                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/courses' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
+                    <span>Giáo trình HSK 1–6</span>
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {/* ── Nhiệm vụ 1: Group Header & Menu Cha 'Từ vựng' ──────────── */}
             <div className="pt-3">
@@ -321,7 +384,7 @@ export const UserLayout: React.FC = () => {
         </div>
 
         {/* Bottom: User HSK Mini Card */}
-        <div className="p-4 border-t border-slate-100">
+        <div className="shrink-0 p-4 border-t border-slate-100">
           <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/60">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">

@@ -1,0 +1,122 @@
+import axiosClient from './axiosClient'
+
+export interface AdaptiveOption {
+  key: string
+  text: string
+}
+
+export interface AdaptiveQuestion {
+  id?: number
+  questionId?: number
+  questionCode: string
+  questionType: string
+  skillKey: string
+  topicKey: string
+  prompt: string
+  promptPinyin?: string
+  promptAudioUrl?: string
+  selectionReason: 'DUE_REVIEW' | 'WEAK_SKILL' | 'NEW_CONTENT'
+  options: AdaptiveOption[]
+}
+
+export interface AdaptiveSessionResponse {
+  sessionId: number
+  levelCode: string
+  questions: AdaptiveQuestion[]
+}
+
+export interface PracticeAnswerResult {
+  correct: boolean
+  correctAnswer: string
+  explanation: string
+  streak: number
+  masteryScore: number
+  intervalDays: number
+  nextReviewAt: string
+  attemptsCount: number
+  correctCount: number
+  sessionCompleted: boolean
+}
+
+export interface SkillMasteryStat {
+  skillKey: string
+  label: string
+  attemptsCount: number
+  correctCount: number
+  masteryScore: number
+  accuracyPercent: number
+  dueReviewCount: number
+  correctStreak: number
+  lastPracticedAt: string | null
+}
+
+export interface LevelMasteryStat {
+  levelCode: string
+  label: string
+  attemptsCount: number
+  correctCount: number
+  accuracyPercent: number
+  masteryScore: number
+  dueReviewCount: number
+}
+
+export interface RecentSessionStat {
+  sessionId: number
+  levelCode: string
+  mode: string
+  state: string
+  startedAt: string | null
+  finishedAt: string | null
+  totalAnswered: number
+  correctAnswered: number
+}
+
+export interface MasterySummary {
+  totalAttempts: number
+  totalCorrect: number
+  overallAccuracy: number
+  averageMastery: number
+  dueReviewCount: number
+  bestStreak: number
+  learnedTopicsCount: number
+  skills: SkillMasteryStat[]
+  levels: LevelMasteryStat[]
+  recentSessions: RecentSessionStat[]
+}
+
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
+export const startAdaptiveSession = async (levelCode: string, limit: number = 10): Promise<AdaptiveSessionResponse> => {
+  const response = await axiosClient.post<ApiResponse<AdaptiveSessionResponse>>('/practice/adaptive-sessions', {
+    levelCode,
+    limit,
+  })
+  return response.data.data
+}
+
+export const submitPracticeAnswer = async (
+  sessionId: number,
+  questionCode: string,
+  answer: string,
+  responseTimeMs: number = 0
+): Promise<PracticeAnswerResult> => {
+  const response = await axiosClient.post<ApiResponse<PracticeAnswerResult>>(
+    `/practice/sessions/${sessionId}/answers`,
+    {
+      questionCode,
+      answer,
+      responseTimeMs,
+    }
+  )
+  return response.data.data
+}
+
+export const getMasterySummary = async (): Promise<MasterySummary> => {
+  const response = await axiosClient.get<ApiResponse<MasterySummary>>('/practice/mastery-summary')
+  return response.data.data
+}
+

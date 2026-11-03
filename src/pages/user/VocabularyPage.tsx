@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AudioButton } from '@/components/ui/AudioButton'
 
 const PRIMARY = '#B52A2A'
 const PAGE_SIZE = 20
@@ -328,7 +329,7 @@ export const VocabularyPage: React.FC = () => {
 
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-[#B52A2A] border border-rose-100 shrink-0">
-                          HSK {item.hskLevel}
+                          HSK {item.levelCode || item.hskLevel || '—'}
                         </span>
                         {item.partOfSpeech && (
                           <span className="text-[10px] text-slate-400 capitalize">
@@ -338,11 +339,17 @@ export const VocabularyPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Phiên âm Pinyin */}
-                    <div>
-                      <p className="text-sm font-medium text-slate-400 tracking-wide">
+                    {/* Phiên âm Pinyin & Nút phát âm */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-500 tracking-wide font-mono">
                         {item.pinyin}
                       </p>
+                      <AudioButton
+                        audioUrl={item.audioUrl}
+                        text={item.hanzi}
+                        size="sm"
+                        title={`Nghe phát âm: ${item.hanzi}`}
+                      />
                     </div>
 
                     {/* Nghĩa tiếng Việt */}
