@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Volume2, VolumeX, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isTextToSpeech, speakChinese, textOf } from '@/lib/speech'
 
 interface AudioButtonProps {
   audioUrl?: string | null
@@ -38,6 +39,19 @@ export const AudioButton: React.FC<AudioButtonProps> = ({
 
     setError(false)
     setIsPlaying(true)
+
+    // The backend sends `tts:<text>` when it has no audio file: read the text aloud.
+    if (isTextToSpeech(audioUrl)) {
+      const started = speakChinese(textOf(audioUrl), () => setIsPlaying(false), () => {
+        setIsPlaying(false)
+        setError(true)
+      })
+      if (!started) {
+        setIsPlaying(false)
+        setError(true)
+      }
+      return
+    }
 
     // 1. Try playing MinIO audioUrl if available
     if (audioUrl) {

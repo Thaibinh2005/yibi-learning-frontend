@@ -7,6 +7,8 @@ interface AuthState {
   refreshToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  /** null until GET /placement/status has answered; not persisted. */
+  onboardingCompleted: boolean | null
 }
 
 const initialAccessToken = localStorage.getItem('yibi_access_token')
@@ -19,6 +21,7 @@ const initialState: AuthState = {
   refreshToken: initialRefreshToken,
   isAuthenticated: !!initialAccessToken,
   isLoading: false,
+  onboardingCompleted: null,
 }
 
 export const authSlice = createSlice({
@@ -36,6 +39,7 @@ export const authSlice = createSlice({
       state.refreshToken = refresh_token
       state.user = user
       state.isAuthenticated = true
+      state.onboardingCompleted = null
 
       localStorage.setItem('yibi_access_token', access_token)
       localStorage.setItem('yibi_refresh_token', refresh_token)
@@ -45,11 +49,15 @@ export const authSlice = createSlice({
       state.accessToken = action.payload
       localStorage.setItem('yibi_access_token', action.payload)
     },
+    setOnboardingCompleted: (state, action: PayloadAction<boolean>) => {
+      state.onboardingCompleted = action.payload
+    },
     logout: (state) => {
       state.user = null
       state.accessToken = null
       state.refreshToken = null
       state.isAuthenticated = false
+      state.onboardingCompleted = null
 
       localStorage.removeItem('yibi_access_token')
       localStorage.removeItem('yibi_refresh_token')
@@ -58,5 +66,5 @@ export const authSlice = createSlice({
   },
 })
 
-export const { setCredentials, updateAccessToken, logout } = authSlice.actions
+export const { setCredentials, updateAccessToken, setOnboardingCompleted, logout } = authSlice.actions
 export default authSlice.reducer
