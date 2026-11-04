@@ -13,6 +13,7 @@ export interface PlacementStatus {
   selfReportedLevel?: number
   hskLevel?: number
   inProgressAttemptId?: number
+  inProgressAnswered?: number
   latestAttemptId?: number
   poolReady: boolean
   speakingAvailable: boolean

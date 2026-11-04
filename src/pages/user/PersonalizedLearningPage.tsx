@@ -12,38 +12,48 @@ const priorityColors: Record<SkillStat['priority'], string> = {
   LOW: 'bg-emerald-50 text-emerald-700', INSUFFICIENT: 'bg-slate-100 text-slate-500',
 }
 
+const RADAR_AXES = [
+  { key: 'listening', label: 'Nghe' },
+  { key: 'reading', label: 'Đọc' },
+  { key: 'writing', label: 'Viết' },
+  { key: 'speaking', label: 'Nói' },
+  { key: 'vocabulary', label: 'Từ vựng' },
+  { key: 'grammar', label: 'Ngữ pháp' },
+]
+
 const RadarChart: React.FC<{ skills: SkillStat[] }> = ({ skills }) => {
-  const axes = [
-    { key: 'vocabulary', x: 160, y: 22 },
-    { key: 'phonetics', x: 278, y: 112 },
-    { key: 'grammar', x: 232, y: 248 },
-    { key: 'characters', x: 88, y: 248 },
-  ]
-  const center = { x: 160, y: 135 }
+  const center = { x: 160, y: 140 }
   const radius = 88
-  const point = (index: number, fraction: number) => {
-    const angle = (-Math.PI / 2) + index * (Math.PI / 2)
-    return `${center.x + Math.cos(angle) * radius * fraction},${center.y + Math.sin(angle) * radius * fraction}`
-  }
-  const values = axes.map((axis) => {
-    const skill = skills.find((item) => item.skillKey === axis.key)
-    return skill && skill.attempts >= 3 ? skill.accuracyPercent / 100 : 0
+  const angleOf = (index: number) => -Math.PI / 2 + (index * 2 * Math.PI) / RADAR_AXES.length
+  const at = (index: number, fraction: number, reach = radius) => ({
+    x: center.x + Math.cos(angleOf(index)) * reach * fraction,
+    y: center.y + Math.sin(angleOf(index)) * reach * fraction,
   })
-  const hasMeasuredSkill = skills.some((item) => item.attempts >= 3)
+  const polygon = (fractions: number[]) =>
+    fractions.map((fraction, index) => `${at(index, fraction).x},${at(index, fraction).y}`).join(' ')
+  const stats = RADAR_AXES.map((axis) => skills.find((item) => item.skillKey === axis.key))
+  const values = stats.map((skill) => (skill && skill.attempts >= 3 ? skill.accuracyPercent / 100 : 0))
+  const hasMeasuredSkill = stats.some((skill) => skill && skill.attempts >= 3)
 
   return (
     <div className="flex justify-center">
       <svg viewBox="0 0 320 285" className="w-full max-w-[340px]" role="img" aria-label="Biểu đồ năng lực theo kỹ năng">
         {[0.25, 0.5, 0.75, 1].map((ring) => (
-          <polygon key={ring} points={axes.map((_, index) => point(index, ring)).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
+          <polygon key={ring} points={polygon(RADAR_AXES.map(() => ring))} fill="none" stroke="#e2e8f0" strokeWidth="1" />
         ))}
-        {axes.map((axis, index) => <line key={axis.key} x1={center.x} y1={center.y} x2={point(index, 1).split(',')[0]} y2={point(index, 1).split(',')[1]} stroke="#cbd5e1" />)}
-        {hasMeasuredSkill && <polygon points={axes.map((_, index) => point(index, values[index])).join(' ')} fill="rgba(181,42,42,0.18)" stroke="#B52A2A" strokeWidth="2.5" />}
-        {axes.map((axis) => {
-          const skill = skills.find((item) => item.skillKey === axis.key)
-          const labels: Record<string, string> = { vocabulary: 'Từ vựng', phonetics: 'Phát âm', grammar: 'Ngữ pháp', characters: 'Chữ Hán' }
+        {RADAR_AXES.map((axis, index) => (
+          <line key={axis.key} x1={center.x} y1={center.y} x2={at(index, 1).x} y2={at(index, 1).y} stroke="#cbd5e1" />
+        ))}
+        {hasMeasuredSkill && <polygon points={polygon(values)} fill="rgba(181,42,42,0.18)" stroke="#B52A2A" strokeWidth="2.5" />}
+        {RADAR_AXES.map((axis, index) => {
+          const skill = stats[index]
           const measured = Boolean(skill && skill.attempts >= 3)
-          return <text key={axis.key} x={axis.x} y={axis.y} textAnchor="middle" className="fill-slate-600 text-[11px]">{labels[axis.key]}{measured ? ` ${skill?.accuracyPercent}%` : ' —'}</text>
+          const label = at(index, 1, radius + 22)
+          return (
+            <text key={axis.key} x={label.x} y={label.y + 4} textAnchor="middle" className="fill-slate-600 text-[11px]">
+              {axis.label}{measured ? ` ${skill?.accuracyPercent}%` : ' —'}
+            </text>
+          )
         })}
       </svg>
     </div>

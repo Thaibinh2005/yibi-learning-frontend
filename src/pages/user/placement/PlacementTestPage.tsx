@@ -16,6 +16,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { skillLabel } from '@/lib/placement'
 import type { PlacementStep } from '@/types/placement'
 
+/** What went wrong in words the learner can act on: no connection, the server's own message, or a retry hint. */
+function reasonOf(error: unknown): string {
+  if (!isAxiosError(error)) return 'Có lỗi bất ngờ.'
+  if (!error.response) return 'Không kết nối được máy chủ. Kiểm tra mạng rồi gửi lại.'
+  const message = (error.response.data as { message?: string } | undefined)?.message
+  if (error.response.status < 500 && message) return message
+  return 'Máy chủ chưa xử lý được đáp án này. Thử gửi lại sau ít giây.'
+}
+
 export function PlacementTestPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -24,6 +33,7 @@ export function PlacementTestPage() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [failedQuestionId, setFailedQuestionId] = useState<number | null>(null)
+  const [failureReason, setFailureReason] = useState<string | null>(null)
   const [exitOpen, setExitOpen] = useState(false)
   const shownAt = useRef(Date.now())
 
@@ -69,7 +79,8 @@ export function PlacementTestPage() {
     setFailedQuestionId(null)
     try {
       advance(await answerPlacement(step.attemptId, { questionId: question.id, choiceKey: selected, responseTimeSeconds: seconds() }))
-    } catch {
+    } catch (error) {
+      setFailureReason(reasonOf(error))
       setFailedQuestionId(question.id)
     } finally {
       setSubmitting(false)
@@ -85,7 +96,8 @@ export function PlacementTestPage() {
     if (!step || !question) return
     try {
       advance(await skipPlacementQuestion(step.attemptId, question.id))
-    } catch {
+    } catch (error) {
+      setFailureReason(reasonOf(error))
       setSubmitFailed(true)
     }
   }
@@ -144,7 +156,7 @@ export function PlacementTestPage() {
 
         {submitFailed && (
           <InlineBanner variant="danger" title="Chưa gửi được đáp án.">
-            Câu trả lời của bạn vẫn được giữ trên màn hình. Kiểm tra kết nối rồi gửi lại.
+            {failureReason ?? 'Kiểm tra kết nối rồi gửi lại.'} Câu trả lời của bạn vẫn được giữ trên màn hình.
             <div className="mt-2">
               <Button size="sm" className="max-sm:h-11" onClick={speaking ? skip : submit}>
                 Gửi lại

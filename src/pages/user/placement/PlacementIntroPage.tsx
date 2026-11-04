@@ -132,7 +132,7 @@ export function PlacementIntroPage() {
               </h1>
               <p className="text-base text-slate-600">
                 {resuming
-                  ? 'Bài được giữ nguyên ở câu bạn đang làm. Tiếp tục là xong sớm.'
+                  ? `${status.inProgressAnswered !== undefined ? `Bạn đã làm ${status.inProgressAnswered} câu. ` : ''}Bài được giữ nguyên ở câu đang làm, tiếp tục là xong sớm.`
                   : 'Trả lời vài câu nghe, nói, đọc, viết. Câu hỏi tự khó dần hoặc dễ dần theo cách bạn làm, để kết quả sát với trình độ thật.'}
               </p>
             </div>
