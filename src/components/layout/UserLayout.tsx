@@ -61,7 +61,7 @@ export const UserLayout: React.FC = () => {
   // Trạng thái mở/đóng của các cụm điều hướng xổ xuống
   const isInsideVocab = location.pathname.startsWith('/vocabulary')
   const [isVocabOpen, setIsVocabOpen] = useState(true)
-  const isInsideCourses = location.pathname === '/courses' || location.pathname.startsWith('/learning-path') || location.pathname.startsWith('/practice')
+  const isInsideCourses = location.pathname === '/courses' || location.pathname.startsWith('/learning-path') || location.pathname.startsWith('/placement') || location.pathname.startsWith('/onboarding') || location.pathname.startsWith('/practice')
   const [isCoursesOpen, setIsCoursesOpen] = useState(true)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -113,6 +113,9 @@ export const UserLayout: React.FC = () => {
     if (sub) return sub.label
     if (location.pathname === '/vocabulary') return 'Kho Từ Vựng HSK'
     if (location.pathname === '/learning-path') return 'Lộ trình cá nhân'
+    if (location.pathname.startsWith('/onboarding')) return 'Khảo sát trình độ'
+    if (location.pathname.startsWith('/placement/result')) return 'Kết quả xếp trình độ'
+    if (location.pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
     if (location.pathname === '/courses') {
       const level = Number(new URLSearchParams(location.search).get('hskLevel') || 1)
       return `Giáo trình HSK ${level}`

@@ -14,6 +14,12 @@ import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
 import { AdaptivePracticePage } from '@/pages/user/AdaptivePracticePage'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
+import { OnboardingSurveyPage } from '@/pages/user/placement/OnboardingSurveyPage'
+import { PlacementIntroPage } from '@/pages/user/placement/PlacementIntroPage'
+import { PlacementTestPage } from '@/pages/user/placement/PlacementTestPage'
+import { PlacementFinishPage } from '@/pages/user/placement/PlacementFinishPage'
+import { PlacementResultPage } from '@/pages/user/placement/PlacementResultPage'
+import { OnboardingGate } from './OnboardingGate'
 import { PrivateRoute } from './PrivateRoute'
 import { AdminRoute } from './AdminRoute'
 
@@ -32,6 +38,9 @@ export const router = createBrowserRouter([
   {
     element: <PrivateRoute />,
     children: [
+      {
+        element: <OnboardingGate />,
+        children: [
       {
         element: <UserLayout />,
         children: [
@@ -110,6 +119,14 @@ export const router = createBrowserRouter([
             path: '/exams',
             element: <ExamPage />,
           },
+          // ── Onboarding survey and the adaptive placement test ──
+          { path: '/onboarding', element: <OnboardingSurveyPage /> },
+          { path: '/placement', element: <PlacementIntroPage /> },
+          { path: '/placement/test', element: <PlacementTestPage /> },
+          { path: '/placement/finish', element: <PlacementFinishPage /> },
+          { path: '/placement/result/:attemptId', element: <PlacementResultPage /> },
+        ],
+      },
         ],
       },
     ],
