@@ -23,6 +23,7 @@ import {
   CheckSquare,
   X,
   Save,
+  Grid3x3,
 } from 'lucide-react'
 import {
   runQuestionGenerator,
@@ -32,6 +33,7 @@ import {
   publishQuestionItem,
   updateQuestionItem,
   deleteQuestionItem,
+  changeQuestionStatus,
 } from '@/api/adminApi'
 import type {
   GeneratorRunResult,
@@ -42,6 +44,8 @@ import type {
   QuestionUpdateRequest,
 } from '@/types/admin'
 import { AudioButton } from '@/components/ui/AudioButton'
+import { AiGeneratorPanel } from '@/components/admin/AiGeneratorPanel'
+import { PoolCoveragePanel } from '@/components/admin/PoolCoveragePanel'
 import { useAppSelector } from '@/app/hooks'
 
 const HSK_LEVELS = ['1', '2', '3', '4', '5', '6', '7-9']
@@ -56,7 +60,8 @@ const QUESTION_TYPES = [
 
 export const AdminDashboardPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth)
-  const [activeTab, setActiveTab] = useState<'generator' | 'repository' | 'analytics'>('generator')
+  const [activeTab, setActiveTab] = useState<'generator' | 'repository' | 'coverage' | 'analytics'>('generator')
+  const [genSource, setGenSource] = useState<'rules' | 'ai'>('rules')
 
   // ──────────────────────────────────────────────────────────────────────────
   // Tab 1: Generator State
@@ -204,6 +209,20 @@ export const AdminDashboardPage: React.FC = () => {
     } catch (err: any) {
       console.error('Publish error:', err)
       alert(err?.response?.data?.message || 'Không thể phê duyệt câu hỏi.')
+    }
+  }
+
+  // Từ chối, kích hoạt lại hoặc ngưng dùng một câu hỏi
+  const handleChangeStatus = async (id: number, action: 'reject' | 'activate' | 'deactivate') => {
+    const next = { reject: 'REJECTED', activate: 'PUBLISHED', deactivate: 'RETIRED' }[action]
+    const text = { reject: 'đã bị từ chối', activate: 'đã được kích hoạt lại', deactivate: 'đã ngưng dùng' }[action]
+    try {
+      await changeQuestionStatus(id, action)
+      showToast(`Câu hỏi #${id} ${text}.`)
+      setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, status: next } : q)))
+      fetchStats()
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không đổi được trạng thái câu hỏi.')
     }
   }
 
@@ -363,6 +382,18 @@ export const AdminDashboardPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('coverage')}
+            className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'coverage'
+                ? 'border-[#B52A2A] text-[#B52A2A]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Grid3x3 className="w-4 h-4" />
+            <span>Độ phủ</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'analytics'
@@ -402,6 +433,25 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
 
+            <div role="group" aria-label="Nguồn sinh câu hỏi" className="inline-flex rounded-xl bg-slate-100 p-1">
+              {([['rules', 'Theo quy tắc từ vựng'], ['ai', 'Gemini (AI)']] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setGenSource(id)}
+                  aria-pressed={genSource === id}
+                  className={`cursor-pointer rounded-lg px-4 py-1.5 text-xs font-bold transition-all ${
+                    genSource === id ? 'bg-white text-[#B52A2A] shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {genSource === 'ai' && <AiGeneratorPanel onGenerated={fetchStats} />}
+
+            {genSource === 'rules' && (<>
             {/* Form tham số sinh câu hỏi */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <form onSubmit={handleRunGenerator} className="space-y-6">
@@ -708,8 +758,11 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
             )}
+            </>)}
           </div>
         )}
+
+        {activeTab === 'coverage' && <PoolCoveragePanel />}
 
         {/* ======================================================== */}
         {/* TAB 2: QUESTION BANK REPOSITORY                          */}
@@ -943,6 +996,33 @@ export const AdminDashboardPage: React.FC = () => {
                               title="Phê duyệt câu hỏi này"
                             >
                               Duyệt
+                            </button>
+                          )}
+                          {q.status === 'DRAFT' && (
+                            <button
+                              onClick={() => handleChangeStatus(q.id, 'reject')}
+                              className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition text-[11px] cursor-pointer"
+                              title="Từ chối câu hỏi này"
+                            >
+                              Từ chối
+                            </button>
+                          )}
+                          {q.status === 'PUBLISHED' && (
+                            <button
+                              onClick={() => handleChangeStatus(q.id, 'deactivate')}
+                              className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition text-[11px] cursor-pointer"
+                              title="Ngưng dùng câu hỏi này"
+                            >
+                              Ngưng dùng
+                            </button>
+                          )}
+                          {q.status === 'RETIRED' && (
+                            <button
+                              onClick={() => handleChangeStatus(q.id, 'activate')}
+                              className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition text-[11px] cursor-pointer"
+                              title="Kích hoạt lại câu hỏi này"
+                            >
+                              Kích hoạt
                             </button>
                           )}
 

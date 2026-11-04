@@ -1,6 +1,9 @@
 import axiosClient from './axiosClient'
 import type { ApiResponse } from '@/types/auth'
 import type {
+  AiGenerationParams,
+  AiGenerationResult,
+  PoolCoverage,
   GeneratorRunResult,
   QuestionGeneratorParams,
   QuestionBankPageResponse,
@@ -91,3 +94,23 @@ export const deleteQuestionItem = async (id: number): Promise<void> => {
   await axiosClient.delete<ApiResponse<string>>(`/admin/question-bank/items/${id}`)
 }
 
+
+/** Asks Gemini for a batch of questions; the usable ones are saved as DRAFT. */
+export const generateQuestionsWithAi = async (params: AiGenerationParams): Promise<AiGenerationResult> => {
+  const response = await axiosClient.post<ApiResponse<AiGenerationResult>>('/admin/question-generator/ai', params)
+  return response.data.data
+}
+
+/** Published questions per level band and skill against the target the placement test needs. */
+export const getPoolCoverage = async (): Promise<PoolCoverage> => {
+  const response = await axiosClient.get<ApiResponse<PoolCoverage>>('/admin/question-bank/pool-coverage')
+  return response.data.data
+}
+
+/** Moves a question between DRAFT, PUBLISHED and RETIRED. */
+export const changeQuestionStatus = async (
+  id: number,
+  action: 'reject' | 'activate' | 'deactivate',
+): Promise<void> => {
+  await axiosClient.post<ApiResponse<string>>(`/admin/question-bank/items/${id}/${action}`)
+}

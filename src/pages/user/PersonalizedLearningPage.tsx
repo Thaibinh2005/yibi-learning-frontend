@@ -1,17 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, LoaderCircle, RefreshCw, Sparkles } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Compass, RefreshCw, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { AudioButton } from '@/components/ui/AudioButton'
-import {
-  getLearningPathOverview,
-  startPlacementAssessment,
-  submitPlacementAssessment,
-  type AssessmentResult,
-  type LearningPathOverview,
-  type PlacementQuestion,
-  type PlacementTest,
-  type SkillStat,
-} from '@/api/learningPathApi'
+import { getLearningPathOverview, type LearningPathOverview, type SkillStat } from '@/api/learningPathApi'
 
 const priorityLabels: Record<SkillStat['priority'], string> = {
   HIGH: 'Ưu tiên cao', MEDIUM: 'Ưu tiên vừa', LOW: 'Ôn định kỳ', INSUFFICIENT: 'Chưa đủ dữ liệu',
@@ -22,151 +12,62 @@ const priorityColors: Record<SkillStat['priority'], string> = {
   LOW: 'bg-emerald-50 text-emerald-700', INSUFFICIENT: 'bg-slate-100 text-slate-500',
 }
 
+const RADAR_AXES = [
+  { key: 'listening', label: 'Nghe' },
+  { key: 'reading', label: 'Đọc' },
+  { key: 'writing', label: 'Viết' },
+  { key: 'speaking', label: 'Nói' },
+  { key: 'vocabulary', label: 'Từ vựng' },
+  { key: 'grammar', label: 'Ngữ pháp' },
+]
+
 const RadarChart: React.FC<{ skills: SkillStat[] }> = ({ skills }) => {
-  const axes = [
-    { key: 'vocabulary', x: 160, y: 22 },
-    { key: 'phonetics', x: 278, y: 112 },
-    { key: 'grammar', x: 232, y: 248 },
-    { key: 'characters', x: 88, y: 248 },
-  ]
-  const center = { x: 160, y: 135 }
+  const center = { x: 160, y: 140 }
   const radius = 88
-  const point = (index: number, fraction: number) => {
-    const angle = (-Math.PI / 2) + index * (Math.PI / 2)
-    return `${center.x + Math.cos(angle) * radius * fraction},${center.y + Math.sin(angle) * radius * fraction}`
-  }
-  const values = axes.map((axis) => {
-    const skill = skills.find((item) => item.skillKey === axis.key)
-    return skill && skill.attempts >= 3 ? skill.accuracyPercent / 100 : 0
+  const angleOf = (index: number) => -Math.PI / 2 + (index * 2 * Math.PI) / RADAR_AXES.length
+  const at = (index: number, fraction: number, reach = radius) => ({
+    x: center.x + Math.cos(angleOf(index)) * reach * fraction,
+    y: center.y + Math.sin(angleOf(index)) * reach * fraction,
   })
-  const hasMeasuredSkill = skills.some((item) => item.attempts >= 3)
+  const polygon = (fractions: number[]) =>
+    fractions.map((fraction, index) => `${at(index, fraction).x},${at(index, fraction).y}`).join(' ')
+  const stats = RADAR_AXES.map((axis) => skills.find((item) => item.skillKey === axis.key))
+  const values = stats.map((skill) => (skill && skill.attempts >= 3 ? skill.accuracyPercent / 100 : 0))
+  const hasMeasuredSkill = stats.some((skill) => skill && skill.attempts >= 3)
 
   return (
     <div className="flex justify-center">
       <svg viewBox="0 0 320 285" className="w-full max-w-[340px]" role="img" aria-label="Biểu đồ năng lực theo kỹ năng">
         {[0.25, 0.5, 0.75, 1].map((ring) => (
-          <polygon key={ring} points={axes.map((_, index) => point(index, ring)).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
+          <polygon key={ring} points={polygon(RADAR_AXES.map(() => ring))} fill="none" stroke="#e2e8f0" strokeWidth="1" />
         ))}
-        {axes.map((axis, index) => <line key={axis.key} x1={center.x} y1={center.y} x2={point(index, 1).split(',')[0]} y2={point(index, 1).split(',')[1]} stroke="#cbd5e1" />)}
-        {hasMeasuredSkill && <polygon points={axes.map((_, index) => point(index, values[index])).join(' ')} fill="rgba(181,42,42,0.18)" stroke="#B52A2A" strokeWidth="2.5" />}
-        {axes.map((axis) => {
-          const skill = skills.find((item) => item.skillKey === axis.key)
-          const labels: Record<string, string> = { vocabulary: 'Từ vựng', phonetics: 'Phát âm', grammar: 'Ngữ pháp', characters: 'Chữ Hán' }
+        {RADAR_AXES.map((axis, index) => (
+          <line key={axis.key} x1={center.x} y1={center.y} x2={at(index, 1).x} y2={at(index, 1).y} stroke="#cbd5e1" />
+        ))}
+        {hasMeasuredSkill && <polygon points={polygon(values)} fill="rgba(181,42,42,0.18)" stroke="#B52A2A" strokeWidth="2.5" />}
+        {RADAR_AXES.map((axis, index) => {
+          const skill = stats[index]
           const measured = Boolean(skill && skill.attempts >= 3)
-          return <text key={axis.key} x={axis.x} y={axis.y} textAnchor="middle" className="fill-slate-600 text-[11px]">{labels[axis.key]}{measured ? ` ${skill?.accuracyPercent}%` : ' —'}</text>
+          const label = at(index, 1, radius + 22)
+          return (
+            <text key={axis.key} x={label.x} y={label.y + 4} textAnchor="middle" className="fill-slate-600 text-[11px]">
+              {axis.label}{measured ? ` ${skill?.accuracyPercent}%` : ' —'}
+            </text>
+          )
         })}
       </svg>
     </div>
   )
 }
 
-const QuestionCard: React.FC<{
-  question: PlacementQuestion
-  index: number
-  total: number
-  selected: string | undefined
-  onSelect: (value: string) => void
-}> = ({ question, index, total, selected, onSelect }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs md:p-7">
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-      <span className="text-xs font-semibold text-[#B52A2A]">{question.skillLabel} · Bài {question.lessonNumber}</span>
-      <span className="text-xs text-slate-400">Câu {index + 1}/{total}</span>
-    </div>
-    <div className="mb-6 h-2 overflow-hidden rounded-full bg-slate-100">
-      <div className="h-full rounded-full bg-[#B52A2A] transition-all" style={{ width: `${((index + 1) / total) * 100}%` }} />
-    </div>
-    <div className="mb-5 flex items-start justify-between gap-3">
-      <h2 className="text-lg font-bold leading-relaxed text-slate-800">{question.prompt}</h2>
-      <AudioButton text={question.prompt} size="md" title="Phát âm câu hỏi" />
-    </div>
-    <div className="grid gap-3 sm:grid-cols-2">
-      {question.options.map((option, optionIndex) => (
-        <button
-          key={`${option}-${optionIndex}`}
-          onClick={() => onSelect(option)}
-          className={`rounded-xl border p-4 text-left text-sm transition ${selected === option ? 'border-[#B52A2A] bg-red-50 font-semibold text-[#B52A2A]' : 'border-slate-200 text-slate-700 hover:border-red-200 hover:bg-slate-50'}`}
-        >
-          <span className="mr-2 text-xs text-slate-400">{String.fromCharCode(65 + optionIndex)}.</span>{option}
-        </button>
-      ))}
-    </div>
-  </div>
-)
-
 export const PersonalizedLearningPage: React.FC = () => {
   const [overview, setOverview] = useState<LearningPathOverview | null>(null)
-  const [assessment, setAssessment] = useState<PlacementTest | null>(null)
-  const [result, setResult] = useState<AssessmentResult | null>(null)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [times, setTimes] = useState<Record<string, number>>({})
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [questionStartedAt, setQuestionStartedAt] = useState(Date.now())
-
-  const refreshOverview = () => getLearningPathOverview().then(setOverview).catch(() => undefined)
   useEffect(() => {
-    refreshOverview().catch(() => setError('Không tải được dữ liệu lộ trình.'))
-      .finally(() => setLoading(false))
+    getLearningPathOverview().then(setOverview).catch(() => setError('Không tải được dữ liệu lộ trình.'))
   }, [])
 
-  const beginAssessment = async () => {
-    setError('')
-    setLoading(true)
-    try {
-      const started = await startPlacementAssessment()
-      setAssessment(started)
-      setResult(null)
-      setAnswers({})
-      setTimes({})
-      setQuestionIndex(0)
-      setQuestionStartedAt(Date.now())
-    } catch (cause) {
-      setError('Không thể tạo bài đánh giá. Hãy kiểm tra database đã được migration và import dữ liệu HSK 1 chưa.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const activeQuestion = assessment?.questions[questionIndex]
-  const selectedSkills = useMemo(() => result?.skills ?? overview?.skills ?? [], [result, overview])
-
-  const selectAnswer = (value: string) => {
-    if (!activeQuestion) return
-    setAnswers((current) => ({ ...current, [activeQuestion.id]: value }))
-    setTimes((current) => ({
-      ...current,
-      [activeQuestion.id]: current[activeQuestion.id] ?? Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000)),
-    }))
-  }
-
-  const moveQuestion = (direction: number) => {
-    if (!assessment) return
-    setQuestionIndex((current) => Math.max(0, Math.min(assessment.questions.length - 1, current + direction)))
-    setQuestionStartedAt(Date.now())
-  }
-
-  const submit = async () => {
-    if (!assessment) return
-    setSubmitting(true)
-    setError('')
-    try {
-      const submitted = await submitPlacementAssessment(assessment.assessmentId, assessment.questions.map((question) => ({
-        questionId: question.id,
-        answer: answers[question.id] ?? '',
-        responseTimeSeconds: times[question.id] ?? 0,
-      })))
-      setResult(submitted)
-      setAssessment(null)
-      await refreshOverview()
-    } catch {
-      setError('Chưa nộp được bài. Hãy thử gửi lại; dữ liệu bài làm vẫn còn trên trang.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
+  const selectedSkills = overview?.skills ?? []
   const prioritySkills = selectedSkills.filter((skill) => skill.priority === 'HIGH' || skill.priority === 'MEDIUM')
 
   return (
@@ -178,7 +79,7 @@ export const PersonalizedLearningPage: React.FC = () => {
             <div className="rounded-xl bg-red-50 p-3 text-[#B52A2A]"><Sparkles className="h-5 w-5" /></div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Lộ trình cá nhân hóa</h1>
-              <p className="mt-1 text-xs text-slate-500">Đánh giá theo dữ liệu HSK 1 hiện có và ưu tiên ôn tập theo kết quả của bạn.</p>
+              <p className="mt-1 text-xs text-slate-500">Xác định trình độ HSK 1–9 và ưu tiên ôn tập theo kết quả của bạn.</p>
             </div>
           </div>
           <Link
@@ -193,44 +94,20 @@ export const PersonalizedLearningPage: React.FC = () => {
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
 
-      {assessment && activeQuestion ? (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-4">
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-relaxed text-blue-800">{assessment.notice}</div>
-            <QuestionCard question={activeQuestion} index={questionIndex} total={assessment.questions.length} selected={answers[activeQuestion.id]} onSelect={selectAnswer} />
-            <div className="flex items-center justify-between">
-              <button disabled={questionIndex === 0} onClick={() => moveQuestion(-1)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-40"><ArrowLeft className="h-4 w-4" />Câu trước</button>
-              {questionIndex < assessment.questions.length - 1 ? (
-                <button onClick={() => moveQuestion(1)} className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2 text-sm font-semibold text-white">Câu tiếp<ArrowRight className="h-4 w-4" /></button>
-              ) : (
-                <button disabled={submitting} onClick={submit} className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}Nộp bài</button>
-              )}
-            </div>
-          </div>
-          <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <h2 className="font-bold text-slate-800">Bài đánh giá HSK 1</h2>
-            <p className="mt-2 text-sm text-slate-500">{assessment.questions.length} câu · {new Set(assessment.questions.map((question) => question.skillKey)).size} nhóm kỹ năng có dữ liệu</p>
-            <p className="mt-4 text-xs leading-relaxed text-slate-400">Chọn đáp án ở từng câu. Những câu bỏ trống được tính là chưa đúng để hệ thống biết phần nào cần ôn lại.</p>
-          </aside>
-        </div>
-      ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="space-y-5">
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#B52A2A]">Phạm vi hiện có: HSK 1</p>
-                  <h2 className="mt-2 text-lg font-bold text-slate-800">{result ? 'Kết quả đánh giá của bạn' : 'Bắt đầu bằng bài đánh giá năng lực'}</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">{result?.levelSummary ?? overview?.levelSummary ?? 'Bài test sử dụng dữ liệu từ vựng, pinyin, chữ Hán và ngữ pháp đã nhập. Chưa đánh giá các cấp HSK cao hơn.'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#B52A2A]">Trình độ hiện tại: HSK {overview?.availableHskLevel ?? 1}</p>
+                  <h2 className="mt-2 text-lg font-bold text-slate-800">{overview?.assessmentCompleted ? 'Kết quả đánh giá của bạn' : 'Bắt đầu bằng bài đánh giá năng lực'}</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">{overview?.levelSummary ?? 'Làm bài test xếp trình độ để xác định mức HSK của bạn và xây dựng lộ trình học.'}</p>
                 </div>
-                {result && <div className="rounded-2xl bg-red-50 px-5 py-3 text-center"><div className="text-2xl font-bold text-[#B52A2A]">{result.scorePercent}%</div><div className="text-xs text-slate-500">{result.correctCount}/{result.totalQuestions} câu</div></div>}
               </div>
-              {!assessment && (
-                <button disabled={loading} onClick={beginAssessment} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
-                  {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : result ? <RefreshCw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-                  {result ? 'Làm lại bài đánh giá' : 'Làm bài đánh giá'}
-                </button>
-              )}
+              <Link to="/placement" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#9e2424]">
+                {overview?.assessmentCompleted ? <RefreshCw className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
+                {overview?.assessmentCompleted ? 'Làm lại bài test xếp trình độ' : 'Làm bài test xếp trình độ'}
+              </Link>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -244,7 +121,7 @@ export const PersonalizedLearningPage: React.FC = () => {
                     </Link>
                   ))}
                 </div>
-              ) : <p className="mt-3 text-sm text-slate-500">Làm bài đánh giá trước để hệ thống đề xuất bài ôn phù hợp.</p>}
+              ) : <p className="mt-3 text-sm text-slate-500">Làm bài test xếp trình độ trước để hệ thống đề xuất bài ôn phù hợp.</p>}
             </section>
           </main>
 
@@ -261,10 +138,9 @@ export const PersonalizedLearningPage: React.FC = () => {
               ))}
             </div>
             {prioritySkills.length > 0 && <p className="mt-4 text-xs leading-relaxed text-slate-500">Ưu tiên ôn: {prioritySkills.map((skill) => skill.label).join(', ')}. Điểm hiện được tính từ kết quả bạn đã làm, không suy đoán kỹ năng thiếu dữ liệu.</p>}
-            {!overview?.assessmentCompleted && !result && <p className="mt-4 text-xs text-slate-500">Biểu đồ sẽ cập nhật sau khi bạn hoàn thành bài đánh giá.</p>}
+            {!overview?.assessmentCompleted && <p className="mt-4 text-xs text-slate-500">Biểu đồ sẽ cập nhật sau khi bạn hoàn thành bài đánh giá.</p>}
           </aside>
         </div>
-      )}
     </div>
   )
 }

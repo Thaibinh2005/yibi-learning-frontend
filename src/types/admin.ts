@@ -7,7 +7,7 @@ export type QuestionTypeCode =
   | 'CLOZE'
   | 'GRAMMAR_SELECT'
 
-export type QuestionStatusCode = 'DRAFT' | 'PUBLISHED' | 'REVIEWED' | 'RETIRED'
+export type QuestionStatusCode = 'DRAFT' | 'PUBLISHED' | 'REVIEWED' | 'RETIRED' | 'REJECTED'
 
 export interface ChoicePreview {
   key: string
@@ -130,3 +130,35 @@ export interface QuestionUpdateRequest {
   choices: ChoiceUpdateRequest[]
 }
 
+
+export interface AiGenerationParams {
+  levelCode: string
+  skillKey: string
+  questionType: string
+  topicKey?: string
+  difficulty?: number
+  count?: number
+}
+
+export interface AiGenerationResult {
+  requested: number
+  model: string
+  /** Ids of the DRAFT questions that were saved. */
+  createdIds: number[]
+  /** Why each rejected question was not saved. */
+  rejected: string[]
+}
+
+export interface PoolCoverageCell {
+  levelCode: string
+  skillKey: string
+  published: number
+  target: number
+  missing: number
+}
+
+export interface PoolCoverage {
+  ready: boolean
+  totalMissing: number
+  cells: PoolCoverageCell[]
+}
