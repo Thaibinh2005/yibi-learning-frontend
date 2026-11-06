@@ -315,7 +315,7 @@ export const LearningPage: React.FC = () => {
       <header className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-red-50 p-3 text-[#B52A2A]"><BookOpen className="h-5 w-5" /></div>
-          <div><h1 className="text-xl font-bold text-slate-800">Lộ trình bài học HSK {hskLabel(selectedHskLevel)}</h1><p className="mt-1 text-sm text-slate-500">Chọn từ vựng, ngữ pháp hoặc chữ Hán, mở bài học và luyện tập theo nội dung giáo trình.</p></div>
+          <div><h1 className="text-xl font-bold text-slate-800">Thư viện giáo trình HSK {hskLabel(selectedHskLevel)}</h1><p className="mt-1 text-sm text-slate-500">Chọn từ vựng, ngữ pháp hoặc chữ Hán, mở bài học và luyện tập theo nội dung giáo trình.</p></div>
           <Link to="/learning-path" className="ml-auto hidden items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 sm:inline-flex"><Sparkles className="h-4 w-4" />Lộ trình cá nhân</Link>
         </div>
       </header>
@@ -375,6 +375,7 @@ export const LearningPage: React.FC = () => {
               {!practiceMode && <button type="button" onClick={addFlashcards} disabled={addingFlashcards || vocabularyCount === 0} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Layers className="h-4 w-4" />{addingFlashcards ? 'Đang thêm...' : 'Flashcard'}</button>}
               {!practiceMode && <button type="button" onClick={startPractice} disabled={generating || !selectedLesson.lessonPayload} className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-60">{generating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{generating ? 'AI đang chuẩn bị bài học...' : generated ? 'Học lại' : 'Bắt đầu học'}</button>}
             </div>
+            {!practiceMode && completedIds.has(selectedLesson.id) && <Link to="/learning-path" className="basis-full rounded-lg bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Đã lưu tiến độ · Về lộ trình để làm việc tiếp theo</Link>}
             {completeError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{completeError}</p>}
             {aiError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">{aiError}</p>}
           </header>

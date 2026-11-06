@@ -122,7 +122,7 @@ export function PlacementResultPage() {
       description: weakSkill
         ? `Tập trung vào ${weakSkill} và các kỹ năng chưa đủ dữ liệu.`
         : 'Tập trung vào các kỹ năng chưa đủ dữ liệu.',
-      to: '/practice/adaptive',
+      to: '/learning-path',
     },
   ]
 

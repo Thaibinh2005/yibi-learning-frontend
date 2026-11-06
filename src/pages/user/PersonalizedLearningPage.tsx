@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, Compass, Loader2, Pencil, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowLeft, Compass, Loader2, Pencil, RefreshCw, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
   getLearningPathOverview,
+  getRoadmap,
   getTodayPlan,
   updateLearningGoal,
   type DailyPlan,
+  type Roadmap,
   type LearningGoalInput,
   type LearningPathOverview,
   type SkillStat,
 } from '@/api/learningPathApi'
 import { GoalForm, goalLabel, levelLabel } from '@/components/learningpath/GoalForm'
-import { TodayPlanCard } from '@/components/learningpath/TodayPlanCard'
+import { RoadmapView } from '@/components/learningpath/RoadmapView'
+import { getMasterySummary, type MasterySummary } from '@/api/practiceApi'
 
 const priorityLabels: Record<SkillStat['priority'], string> = {
   HIGH: 'Ưu tiên cao', MEDIUM: 'Ưu tiên vừa', LOW: 'Ôn định kỳ', INSUFFICIENT: 'Chưa đủ dữ liệu',
@@ -73,18 +76,23 @@ const RadarChart: React.FC<{ skills: SkillStat[] }> = ({ skills }) => {
 export const PersonalizedLearningPage: React.FC = () => {
   const [overview, setOverview] = useState<LearningPathOverview | null>(null)
   const [plan, setPlan] = useState<DailyPlan | null>(null)
+  const [roadmap, setRoadmap] = useState<Roadmap | null>(null)
+  const [mastery, setMastery] = useState<MasterySummary | null>(null)
   const [error, setError] = useState('')
   const [goalDraft, setGoalDraft] = useState<LearningGoalInput | null>(null)
   const [savingGoal, setSavingGoal] = useState(false)
   const [goalError, setGoalError] = useState('')
 
-  const load = () => Promise.all([getLearningPathOverview(), getTodayPlan()]).then(([nextOverview, nextPlan]) => {
+  const load = (level?: number) => Promise.all([getLearningPathOverview(), getTodayPlan(), getRoadmap(level)]).then(([nextOverview, nextPlan, nextRoadmap]) => {
     setOverview(nextOverview)
     setPlan(nextPlan)
+    setRoadmap(nextRoadmap)
   })
 
   useEffect(() => {
     load().catch(() => setError('Không tải được dữ liệu lộ trình.'))
+    // Extra numbers only: the page still works if this one call fails.
+    getMasterySummary().then(setMastery).catch(() => setMastery(null))
   }, [])
 
   const saveGoal = async () => {
@@ -110,31 +118,21 @@ export const PersonalizedLearningPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <header className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-        <Link to="/courses" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#B52A2A]"><ArrowLeft className="h-3.5 w-3.5" />Quay lại khóa học</Link>
+        <Link to="/courses" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#B52A2A]"><ArrowLeft className="h-3.5 w-3.5" />Thư viện giáo trình</Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-red-50 p-3 text-[#B52A2A]"><Sparkles className="h-5 w-5" /></div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Lộ trình cá nhân hóa</h1>
-              <p className="mt-1 text-xs text-slate-500">Xác định trình độ HSK 1–9 và ưu tiên ôn tập theo kết quả của bạn.</p>
+              <h1 className="text-xl font-bold text-slate-800">Lộ trình của tôi</h1>
+              <p className="mt-1 text-xs text-slate-500">Lộ trình theo trình độ, việc cần làm hôm nay và năng lực của bạn ở cùng một nơi.</p>
             </div>
           </div>
-          <Link
-            to="/practice/adaptive"
-            className="inline-flex items-center gap-2 rounded-xl bg-red-50 border border-red-200/80 px-4 py-2.5 text-xs font-bold text-[#B52A2A] hover:bg-red-100 transition-colors self-start sm:self-auto"
-          >
-            <span>Luyện tập thích ứng</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
         </div>
       </header>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <main className="space-y-5">
-            {plan && <TodayPlanCard plan={plan} />}
-
+        <div className="grid gap-5 lg:grid-cols-2">
             {goal && (
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -190,7 +188,6 @@ export const PersonalizedLearningPage: React.FC = () => {
                 )}
               </section>
             )}
-
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -204,20 +201,11 @@ export const PersonalizedLearningPage: React.FC = () => {
                 {overview?.assessmentCompleted ? 'Làm lại bài test xếp trình độ' : 'Làm bài test xếp trình độ'}
               </Link>
             </section>
+        </div>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-              <h2 className="font-bold text-slate-800">Kế hoạch ôn tập đề xuất</h2>
-              {overview?.recommendedLessons?.length ? (
-                <div className="mt-4 space-y-3">
-                  {overview.recommendedLessons.map((lesson) => (
-                    <Link key={lesson.lessonId} to={`/courses?hskLevel=${lesson.hskLevel}&lessonId=${lesson.lessonId}`} className="flex items-start gap-3 rounded-xl border border-slate-100 p-4 hover:border-red-200 hover:bg-red-50/30">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#B52A2A]" />
-                      <div><p className="text-sm font-semibold text-slate-800">Bài {lesson.lessonNumber}: {lesson.title}</p><p className="mt-1 text-xs text-slate-500">{lesson.reason}</p></div>
-                    </Link>
-                  ))}
-                </div>
-              ) : <p className="mt-3 text-sm text-slate-500">Làm bài test xếp trình độ trước để hệ thống đề xuất bài ôn phù hợp.</p>}
-            </section>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <main className="space-y-5">
+            {plan && roadmap && <RoadmapView plan={plan} roadmap={roadmap} onSelectLevel={(level) => { getRoadmap(level).then(setRoadmap).catch(() => setError('Không tải được cấp này.')) }} />}
           </main>
 
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
@@ -233,6 +221,13 @@ export const PersonalizedLearningPage: React.FC = () => {
               ))}
             </div>
             {prioritySkills.length > 0 && <p className="mt-4 text-xs leading-relaxed text-slate-500">Ưu tiên ôn: {prioritySkills.map((skill) => skill.label).join(', ')}. Điểm được tính từ bài test và các lượt luyện tập gần đây, không suy đoán kỹ năng thiếu dữ liệu.</p>}
+            {mastery && mastery.totalAttempts > 0 && (
+              <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-slate-50 p-2"><dd className="text-sm font-bold text-slate-800">{mastery.dueReviewCount}</dd><dt className="text-[10px] text-slate-500">Chủ đề đến hạn ôn</dt></div>
+                <div className="rounded-lg bg-slate-50 p-2"><dd className="text-sm font-bold text-slate-800">{mastery.bestStreak}</dd><dt className="text-[10px] text-slate-500">Chuỗi đúng tốt nhất</dt></div>
+                <div className="rounded-lg bg-slate-50 p-2"><dd className="text-sm font-bold text-slate-800">{mastery.totalAttempts}</dd><dt className="text-[10px] text-slate-500">Câu đã luyện</dt></div>
+              </dl>
+            )}
             {!overview?.assessmentCompleted && <p className="mt-4 text-xs text-slate-500">Biểu đồ cập nhật sau mỗi bài đánh giá hoặc lượt luyện tập.</p>}
           </aside>
         </div>

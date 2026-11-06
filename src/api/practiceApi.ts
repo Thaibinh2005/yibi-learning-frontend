@@ -36,6 +36,8 @@ export interface PracticeAnswerResult {
   attemptsCount: number
   correctCount: number
   sessionCompleted: boolean
+  /** Read-aloud answers only: how close the recording was, from 0 to 1. */
+  accuracy?: number
 }
 
 export interface SkillMasteryStat {
@@ -94,6 +96,24 @@ export const startAdaptiveSession = async (levelCode: string, limit: number = 10
   const response = await axiosClient.post<ApiResponse<AdaptiveSessionResponse>>('/practice/adaptive-sessions', {
     levelCode,
     limit,
+  })
+  return response.data.data
+}
+
+export const submitPracticeSpeaking = async (
+  sessionId: number,
+  questionCode: string,
+  audio: Blob,
+  responseTimeMs: number = 0,
+): Promise<PracticeAnswerResult> => {
+  const form = new FormData()
+  form.append('questionCode', questionCode)
+  form.append('responseTimeMs', String(responseTimeMs))
+  form.append('audio', audio, 'speech.webm')
+  const response = await axiosClient.post<ApiResponse<PracticeAnswerResult>>(`/practice/sessions/${sessionId}/speaking`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    // Scoring runs Whisper on the server, which can take longer than the default 15 s.
+    timeout: 100_000,
   })
   return response.data.data
 }
