@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppSelector } from '@/app/hooks'
+import { getStudyStats, type StudyStats } from '@/api/learningPathApi'
 import {
   BookOpen,
   GraduationCap,
@@ -17,6 +18,13 @@ const PRIMARY = '#B52A2A'
 export const DashboardPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user)
   const username = user?.username || 'Bạn'
+  const [stats, setStats] = useState<StudyStats | null>(null)
+
+  useEffect(() => {
+    getStudyStats().then(setStats).catch(() => setStats(null))
+  }, [])
+
+  const dueCards = stats?.dueCards ?? 0
 
   return (
     <div className="space-y-6">
@@ -46,7 +54,7 @@ export const DashboardPage: React.FC = () => {
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <Link
-              to="/courses"
+              to="/learning-path"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm active:scale-95"
               style={{ backgroundColor: PRIMARY }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#9e2424')}
@@ -62,7 +70,7 @@ export const DashboardPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
             >
               <Layers className="w-4 h-4 text-slate-500" />
-              Ôn 12 từ SRS hôm nay
+              {dueCards > 0 ? `Ôn ${dueCards} từ đến hạn hôm nay` : 'Mở flashcard'}
             </Link>
           </div>
         </div>
@@ -97,8 +105,8 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">3 ngày</div>
-            <p className="text-xs text-slate-400 mt-1">Duy trì liên tục để nhận huy hiệu</p>
+            <div className="text-2xl font-bold text-slate-900">{stats?.streakDays ?? 0} ngày</div>
+            <p className="text-xs text-slate-400 mt-1">Hôm nay {stats?.todayMinutes ?? 0}/{stats?.dailyGoalMinutes ?? 0} phút · đạt {stats?.goalPercent ?? 0}% mục tiêu</p>
           </div>
         </div>
 
@@ -111,8 +119,8 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">12 từ vựng</div>
-            <p className="text-xs text-slate-400 mt-1">Thuật toán lặp lại ngắt quãng SM-2</p>
+            <div className="text-2xl font-bold text-slate-900">{dueCards} từ vựng</div>
+            <p className="text-xs text-slate-400 mt-1">Đến hạn hôm nay theo lịch lặp lại ngắt quãng</p>
           </div>
         </div>
 
@@ -125,11 +133,30 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">95 / 100</div>
-            <p className="text-xs text-slate-400 mt-1">Đề HSK 1 Mẫu số 01 (Đạt)</p>
+            <div className="text-2xl font-bold text-slate-900">{stats?.bestExamScore != null ? `${stats.bestExamScore}%` : '—'}</div>
+            <p className="text-xs text-slate-400 mt-1">{stats?.bestExamLevel != null ? `Đề luyện ${stats.bestExamLevel >= 7 ? 'HSK 7–9' : `HSK ${stats.bestExamLevel}`}` : 'Chưa làm đề nào'}</p>
           </div>
         </div>
       </div>
+
+      {/* ── Study time, last seven days ─────────────────────────────── */}
+      {stats && (
+        <section className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-800">Thời gian học 7 ngày qua</h2>
+            <p className="text-xs text-slate-500">Hôm nay: {stats.answersToday} câu{stats.answersToday > 0 ? `, đúng ${stats.accuracyToday}%` : ''} · {stats.nodesCompleted} bài đã hoàn thành</p>
+          </div>
+          <ol className="mt-3 grid grid-cols-7 gap-2 text-center">
+            {stats.week.map((day) => (
+              <li key={day.date} className={`rounded-xl px-1 py-2.5 ${day.goalMet ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-600'}`}>
+                <span className="block text-[11px] font-medium opacity-70">{new Date(`${day.date}T00:00:00`).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</span>
+                <span className="mt-0.5 block text-sm font-bold">{day.minutes}′</span>
+                {day.goalMet && <span className="block text-[10px] font-semibold">Đạt</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {/* ── Feature Cards Grid ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

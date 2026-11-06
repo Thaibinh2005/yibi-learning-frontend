@@ -19,6 +19,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout } from '@/app/slices/authSlice'
 import { authApi } from '@/api/authApi'
+import { getStudyStats, recordStudyActivity, type StudyStats } from '@/api/learningPathApi'
 
 const PRIMARY = '#B52A2A'
 
@@ -52,6 +53,26 @@ export const UserLayout: React.FC = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const [studyStats, setStudyStats] = useState<StudyStats | null>(null)
+
+  // Study time counts only while the page is visible and the learner has been active in the last two minutes.
+  useEffect(() => {
+    const refresh = () => { getStudyStats().then(setStudyStats).catch(() => undefined) }
+    refresh()
+    let lastInput = Date.now()
+    const markActive = () => { lastInput = Date.now() }
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    events.forEach((name) => window.addEventListener(name, markActive, { passive: true }))
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && Date.now() - lastInput < 120_000) {
+        recordStudyActivity(30).then(refresh).catch(() => undefined)
+      }
+    }, 30_000)
+    return () => {
+      window.clearInterval(timer)
+      events.forEach((name) => window.removeEventListener(name, markActive))
+    }
+  }, [])
   const user = useAppSelector((state) => state.auth.user)
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -112,7 +133,10 @@ export const UserLayout: React.FC = () => {
     const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === location.pathname)
     if (sub) return sub.label
     if (location.pathname === '/vocabulary') return 'Kho Từ Vựng HSK'
-    if (location.pathname === '/learning-path') return 'Lộ trình cá nhân'
+    if (location.pathname === '/learning-path/practice') return 'Luyện tập'
+    if (location.pathname.startsWith('/learning-path/level-test')) return 'Kiểm tra vượt cấp'
+    if (location.pathname.startsWith('/learning-path/lesson')) return 'Bài học'
+    if (location.pathname === '/learning-path') return 'Lộ trình của tôi'
     if (location.pathname.startsWith('/onboarding')) return 'Khảo sát trình độ'
     if (location.pathname.startsWith('/placement/result')) return 'Kết quả xếp trình độ'
     if (location.pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
@@ -242,22 +266,11 @@ export const UserLayout: React.FC = () => {
               {isCoursesOpen && (
                 <div className="space-y-1 pl-4 pt-1.5 animate-fade-in">
                   <Link
-                    to="/practice/adaptive"
-                    className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname.startsWith('/practice') ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
-                  >
-                    <div className="flex items-center">
-                      <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname.startsWith('/practice') ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                      <span>Luyện tập thích ứng</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-[#B52A2A]">SRS</span>
-                  </Link>
-
-                  <Link
                     to="/learning-path"
-                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/learning-path' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
+                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname.startsWith('/learning-path') ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
                   >
-                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/learning-path' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                    <span>Lộ trình cá nhân</span>
+                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname.startsWith('/learning-path') ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
+                    <span>Lộ trình của tôi</span>
                   </Link>
 
                   <Link
@@ -265,7 +278,7 @@ export const UserLayout: React.FC = () => {
                     className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/courses' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
                   >
                     <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/courses' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                    <span>Giáo trình HSK 1–9</span>
+                    <span>Thư viện giáo trình</span>
                   </Link>
                 </div>
               )}
@@ -392,7 +405,7 @@ export const UserLayout: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Award className="w-4 h-4 text-amber-500" />
-                Mục tiêu hiện tại
+                Mục tiêu hôm nay
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
                 HSK {user?.hskLevel || 1}
@@ -401,12 +414,12 @@ export const UserLayout: React.FC = () => {
             <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300"
-                style={{ width: '45%', backgroundColor: PRIMARY }}
+                style={{ width: `${studyStats?.goalPercent ?? 0}%`, backgroundColor: PRIMARY }}
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-2 flex items-center justify-between">
-              <span>Đã hoàn thành 45%</span>
-              <span className="font-medium text-slate-600">HSK {(user?.hskLevel || 1) + 1}</span>
+              <span>Đã đạt {studyStats?.goalPercent ?? 0}%</span>
+              <span className="font-medium text-slate-600">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút</span>
             </p>
           </div>
         </div>
@@ -441,7 +454,7 @@ export const UserLayout: React.FC = () => {
             {/* Streak Counter */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200/60 text-orange-600 text-xs font-semibold">
               <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-              <span>3 ngày streak</span>
+              <span>{studyStats?.streakDays ?? 0} ngày liên tiếp</span>
             </div>
 
             {/* User Dropdown */}

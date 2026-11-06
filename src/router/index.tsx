@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { UserLayout } from '@/components/layout/UserLayout'
@@ -12,7 +12,9 @@ import { VocabularyTopicDetailPage } from '@/pages/user/VocabularyTopicDetailPag
 import { TopicFlashcardPage } from '@/pages/user/TopicFlashcardPage'
 import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
-import { AdaptivePracticePage } from '@/pages/user/AdaptivePracticePage'
+import { PracticePage } from '@/pages/user/PracticePage'
+import { PathLessonPage, PathLevelTestPage } from '@/pages/user/PathLessonPage'
+import { PathMistakesPage } from '@/pages/user/PathMistakesPage'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { OnboardingSurveyPage } from '@/pages/user/placement/OnboardingSurveyPage'
 import { PlacementIntroPage } from '@/pages/user/placement/PlacementIntroPage'
@@ -22,6 +24,11 @@ import { PlacementResultPage } from '@/pages/user/placement/PlacementResultPage'
 import { OnboardingGate } from './OnboardingGate'
 import { PrivateRoute } from './PrivateRoute'
 import { AdminRoute } from './AdminRoute'
+
+const OldPracticeRedirect = () => {
+  const { search } = useLocation()
+  return <Navigate to={search.includes('level=') ? `/learning-path/practice${search}` : '/learning-path'} replace />
+}
 
 export const router = createBrowserRouter([
   // ── Public Routes ──────────────────────────────────────────
@@ -65,12 +72,29 @@ export const router = createBrowserRouter([
             element: <PersonalizedLearningPage />,
           },
           {
+            path: '/learning-path/lesson/:nodeId',
+            element: <PathLessonPage />,
+          },
+          {
+            path: '/learning-path/mistakes',
+            element: <PathMistakesPage />,
+          },
+          {
+            path: '/learning-path/level-test/:level',
+            element: <PathLevelTestPage />,
+          },
+          {
+            path: '/learning-path/practice',
+            element: <PracticePage />,
+          },
+          {
+            // Old links: a level means "run this session", anything else opens the path.
             path: '/practice/adaptive',
-            element: <AdaptivePracticePage />,
+            element: <OldPracticeRedirect />,
           },
           {
             path: '/practice',
-            element: <Navigate to="/practice/adaptive" replace />,
+            element: <OldPracticeRedirect />,
           },
           // ── Vocabulary Routes ──
           {
