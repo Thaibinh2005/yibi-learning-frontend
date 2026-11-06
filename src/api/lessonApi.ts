@@ -10,6 +10,8 @@ export interface LessonSections {
   dialogues?: LessonContentItem[]
   grammar?: LessonContentItem[]
   readings?: LessonContentItem[]
+  listenings?: LessonContentItem[]
+  questions?: LessonContentItem[]
   exercises?: LessonContentItem[]
   culture_notes?: LessonContentItem[]
 }
@@ -63,6 +65,7 @@ export interface Lesson {
   courseId: number
   title: string
   lessonOrder: number
+  contentType: 'VOCABULARY' | 'GRAMMAR' | 'HANZI' | 'READING' | 'LISTENING'
   lessonPayload: LessonPayload | null
 }
 
