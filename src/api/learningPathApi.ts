@@ -15,6 +15,44 @@ export interface RecommendedLesson {
   lessonNumber: number
   title: string
   reason: string
+  hskLevel: number
+  contentType: string
+}
+
+export type GoalType = 'HSK' | 'HSKK' | 'COMMUNICATION'
+
+export interface LearningGoalInput {
+  goalType: GoalType
+  targetLevel: number
+  targetScore?: number | null
+  targetDate?: string | null
+  dailyMinutes: number
+}
+
+export interface LearningGoal extends LearningGoalInput {
+  goalSet: boolean
+}
+
+export interface DailyPlanItem {
+  type: 'REVIEW_CARDS' | 'PRACTICE' | 'LESSON'
+  title: string
+  detail: string
+  minutes: number
+  link: string
+  lessonId?: number | null
+}
+
+export interface DailyPlan {
+  goal: LearningGoal
+  currentLevel: number
+  minutesBudget: number
+  minutesPlanned: number
+  items: DailyPlanItem[]
+  remainingLessons: number
+  estimatedDays: number
+  estimatedFinishDate: string
+  onTrack?: boolean | null
+  requiredDailyMinutes?: number | null
 }
 
 export interface LearningPathOverview {
@@ -24,6 +62,7 @@ export interface LearningPathOverview {
   levelSummary: string
   skills: SkillStat[]
   recommendedLessons: RecommendedLesson[]
+  goal: LearningGoal
 }
 
 interface ApiResponse<T> {
@@ -34,3 +73,9 @@ interface ApiResponse<T> {
 
 export const getLearningPathOverview = async () =>
   (await axiosClient.get<ApiResponse<LearningPathOverview>>('/learning-path')).data.data
+
+export const getTodayPlan = async () =>
+  (await axiosClient.get<ApiResponse<DailyPlan>>('/learning-path/today')).data.data
+
+export const updateLearningGoal = async (goal: LearningGoalInput) =>
+  (await axiosClient.put<ApiResponse<LearningGoal>>('/learning-path/goal', goal)).data.data

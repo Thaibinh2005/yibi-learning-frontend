@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3, Layers, LoaderCircle, Play, Sparkles, X, XCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getCourses, type Course } from '@/api/courseApi'
-import { generateAiLessonContent, getLessonsByCourse, startLessonPracticeSession, submitPracticeAnswer, type GeneratedLessonActivity, type Lesson, type LessonContentItem, type PracticeAnswerResult } from '@/api/lessonApi'
+import { generateAiLessonContent, getCompletedLessonIds, getLessonsByCourse, markLessonCompleted, startLessonPracticeSession, submitPracticeAnswer, type GeneratedLessonActivity, type Lesson, type LessonContentItem, type PracticeAnswerResult } from '@/api/lessonApi'
 import { addLessonVocabularyToFlashcards } from '@/api/srsApi'
 import { AudioButton } from '@/components/ui/AudioButton'
 
@@ -84,6 +84,12 @@ export const LearningPage: React.FC = () => {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['vocabulary', 'grammar', 'characters', 'readings', 'listenings', 'questions']))
   const [addingFlashcards, setAddingFlashcards] = useState(false)
   const [flashcardMessage, setFlashcardMessage] = useState('')
+  const [completedIds, setCompletedIds] = useState<Set<number>>(new Set())
+  const [completing, setCompleting] = useState(false)
+  const [completeError, setCompleteError] = useState('')
+  // A link from the learning path opens that lesson once; closing it must not reopen it.
+  const [openedFromLink, setOpenedFromLink] = useState<string | null>(null)
+  const requestedLessonId = searchParams.get('lessonId')
 
   useEffect(() => {
     if (!lessonModalOpen) return
@@ -162,7 +168,35 @@ export const LearningPage: React.FC = () => {
     setSelectedLesson(lesson)
     setPracticeMode(false)
     setFlashcardMessage('')
+    setCompleteError('')
     setLessonModalOpen(true)
+  }
+
+  useEffect(() => {
+    getCompletedLessonIds().then((ids) => setCompletedIds(new Set(ids))).catch(() => undefined)
+  }, [])
+
+  useEffect(() => {
+    if (!requestedLessonId || openedFromLink === requestedLessonId) return
+    const lesson = lessons.find((item) => String(item.id) === requestedLessonId)
+    if (!lesson) return
+    setSelectedTopic(lesson.contentType)
+    openLesson(lesson)
+    setOpenedFromLink(requestedLessonId)
+  }, [lessons, requestedLessonId, openedFromLink])
+
+  const completeLesson = async () => {
+    if (!selectedLesson) return
+    setCompleting(true)
+    setCompleteError('')
+    try {
+      await markLessonCompleted(selectedLesson.id)
+      setCompletedIds((current) => new Set(current).add(selectedLesson.id))
+    } catch {
+      setCompleteError('Chưa lưu được tiến độ. Hãy thử lại.')
+    } finally {
+      setCompleting(false)
+    }
   }
 
   const startPractice = async () => {
@@ -322,7 +356,7 @@ export const LearningPage: React.FC = () => {
                 const dialogues = sections?.dialogues?.length ?? 0
                 return <article key={lesson.id} className="group flex items-center gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-rose-200 hover:bg-rose-50/30 sm:gap-4 sm:px-5">
                   <button type="button" onClick={() => openLesson(lesson)} aria-label={`Mở bài ${lessonNumber(lesson)}: ${lessonTitle(lesson)}`} className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#F36565] to-[#D72E32] text-white shadow-[0_3px_0_#A71F24] transition hover:scale-105"><Play className="ml-0.5 h-5 w-5 fill-current" /></button>
-                  <button type="button" onClick={() => openLesson(lesson)} className="min-w-0 flex-1 text-left"><h3 className="truncate font-bold text-slate-800">Bài {lessonNumber(lesson)}: {lessonTitle(lesson)}</h3><div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">{vocab > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">♧ {vocab} từ vựng</span>}{grammar > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">文 {grammar} ngữ pháp</span>}{characters > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">字 {characters} chữ Hán</span>}{dialogues > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">▢ {dialogues} hội thoại</span>}</div></button>
+                  <button type="button" onClick={() => openLesson(lesson)} className="min-w-0 flex-1 text-left"><h3 className="flex items-center gap-1.5 font-bold text-slate-800">{completedIds.has(lesson.id) && <CheckCircle2 aria-label="Đã hoàn thành" className="h-4 w-4 shrink-0 text-emerald-600" />}<span className="truncate">Bài {lessonNumber(lesson)}: {lessonTitle(lesson)}</span></h3><div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">{vocab > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">♧ {vocab} từ vựng</span>}{grammar > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">文 {grammar} ngữ pháp</span>}{characters > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">字 {characters} chữ Hán</span>}{dialogues > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">▢ {dialogues} hội thoại</span>}</div></button>
                   <button type="button" onClick={() => openLesson(lesson)} className="hidden items-center gap-1 text-xs font-semibold text-slate-400 transition group-hover:text-[#B52A2A] sm:inline-flex"><span>12 phút</span><ChevronRight className="h-4 w-4" /></button>
                 </article>
               })}
@@ -337,9 +371,11 @@ export const LearningPage: React.FC = () => {
           <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-3 py-3 sm:gap-4 sm:px-6 sm:py-5">
             <div className="flex min-w-0 items-start gap-3"><button type="button" onClick={() => practiceMode ? setPracticeMode(false) : setLessonModalOpen(false)} aria-label="Quay lại" className="mt-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">{practiceMode ? <ArrowLeft className="h-5 w-5" /> : <X className="h-5 w-5" />}</button><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#B52A2A]">HSK {hskLabel(selectedHskLevel)} · Bài {lessonNumber(selectedLesson)}</p><h2 id="lesson-modal-title" className="mt-1 text-xl font-bold text-slate-800">{lessonTitle(selectedLesson)}</h2><p className="mt-1 text-xs text-slate-500">{selectedLesson.lessonPayload?.source?.book_title ?? selectedCourse?.title}{selectedLesson.lessonPayload?.source?.start_page ? ` · Trang ${selectedLesson.lessonPayload.source.start_page}-${selectedLesson.lessonPayload.source.end_page}` : ''}</p></div></div>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              {!practiceMode && <button type="button" onClick={completeLesson} disabled={completing || completedIds.has(selectedLesson.id)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"><CheckCircle2 className="h-4 w-4" />{completedIds.has(selectedLesson.id) ? 'Đã hoàn thành' : completing ? 'Đang lưu...' : 'Hoàn thành bài'}</button>}
               {!practiceMode && <button type="button" onClick={addFlashcards} disabled={addingFlashcards || vocabularyCount === 0} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Layers className="h-4 w-4" />{addingFlashcards ? 'Đang thêm...' : 'Flashcard'}</button>}
               {!practiceMode && <button type="button" onClick={startPractice} disabled={generating || !selectedLesson.lessonPayload} className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-60">{generating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{generating ? 'AI đang chuẩn bị bài học...' : generated ? 'Học lại' : 'Bắt đầu học'}</button>}
             </div>
+            {completeError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{completeError}</p>}
             {aiError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">{aiError}</p>}
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6">

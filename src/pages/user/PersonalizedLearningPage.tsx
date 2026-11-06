@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, Compass, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Compass, Loader2, Pencil, RefreshCw, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getLearningPathOverview, type LearningPathOverview, type SkillStat } from '@/api/learningPathApi'
+import {
+  getLearningPathOverview,
+  getTodayPlan,
+  updateLearningGoal,
+  type DailyPlan,
+  type LearningGoalInput,
+  type LearningPathOverview,
+  type SkillStat,
+} from '@/api/learningPathApi'
+import { GoalForm, goalLabel, levelLabel } from '@/components/learningpath/GoalForm'
+import { TodayPlanCard } from '@/components/learningpath/TodayPlanCard'
 
 const priorityLabels: Record<SkillStat['priority'], string> = {
   HIGH: 'Ưu tiên cao', MEDIUM: 'Ưu tiên vừa', LOW: 'Ôn định kỳ', INSUFFICIENT: 'Chưa đủ dữ liệu',
@@ -62,10 +72,37 @@ const RadarChart: React.FC<{ skills: SkillStat[] }> = ({ skills }) => {
 
 export const PersonalizedLearningPage: React.FC = () => {
   const [overview, setOverview] = useState<LearningPathOverview | null>(null)
+  const [plan, setPlan] = useState<DailyPlan | null>(null)
   const [error, setError] = useState('')
+  const [goalDraft, setGoalDraft] = useState<LearningGoalInput | null>(null)
+  const [savingGoal, setSavingGoal] = useState(false)
+  const [goalError, setGoalError] = useState('')
+
+  const load = () => Promise.all([getLearningPathOverview(), getTodayPlan()]).then(([nextOverview, nextPlan]) => {
+    setOverview(nextOverview)
+    setPlan(nextPlan)
+  })
+
   useEffect(() => {
-    getLearningPathOverview().then(setOverview).catch(() => setError('Không tải được dữ liệu lộ trình.'))
+    load().catch(() => setError('Không tải được dữ liệu lộ trình.'))
   }, [])
+
+  const saveGoal = async () => {
+    if (!goalDraft) return
+    setSavingGoal(true)
+    setGoalError('')
+    try {
+      await updateLearningGoal(goalDraft)
+      await load()
+      setGoalDraft(null)
+    } catch {
+      setGoalError('Chưa lưu được mục tiêu. Hãy kiểm tra lại thông tin rồi thử lần nữa.')
+    } finally {
+      setSavingGoal(false)
+    }
+  }
+
+  const goal = overview?.goal
 
   const selectedSkills = overview?.skills ?? []
   const prioritySkills = selectedSkills.filter((skill) => skill.priority === 'HIGH' || skill.priority === 'MEDIUM')
@@ -86,7 +123,7 @@ export const PersonalizedLearningPage: React.FC = () => {
             to="/practice/adaptive"
             className="inline-flex items-center gap-2 rounded-xl bg-red-50 border border-red-200/80 px-4 py-2.5 text-xs font-bold text-[#B52A2A] hover:bg-red-100 transition-colors self-start sm:self-auto"
           >
-            <span>Luyện tập thích ứng (AI / SRS)</span>
+            <span>Luyện tập thích ứng</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -96,6 +133,64 @@ export const PersonalizedLearningPage: React.FC = () => {
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="space-y-5">
+            {plan && <TodayPlanCard plan={plan} />}
+
+            {goal && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="font-bold text-slate-800">Mục tiêu của bạn</h2>
+                  {!goalDraft && (
+                    <button
+                      type="button"
+                      onClick={() => setGoalDraft({
+                        goalType: goal.goalType,
+                        targetLevel: goal.targetLevel,
+                        targetScore: goal.targetScore ?? null,
+                        targetDate: goal.targetDate ?? null,
+                        dailyMinutes: goal.dailyMinutes,
+                      })}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      {goal.goalSet ? 'Sửa' : 'Đặt mục tiêu'}
+                    </button>
+                  )}
+                </div>
+                {goalDraft ? (
+                  <div className="mt-4 space-y-4">
+                    <GoalForm value={goalDraft} onChange={setGoalDraft} />
+                    {goalError && <p role="alert" className="text-sm text-rose-700">{goalError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={saveGoal}
+                        disabled={savingGoal}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#9e2424] disabled:opacity-50"
+                      >
+                        {savingGoal && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Lưu mục tiêu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setGoalDraft(null); setGoalError('') }}
+                        className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-600">
+                    {goalLabel(goal.goalType)} · {levelLabel(goal.targetLevel)}
+                    {goal.targetScore != null && ` · ${goal.targetScore} điểm`}
+                    {goal.targetDate && ` · trước ${new Date(`${goal.targetDate}T00:00:00`).toLocaleDateString('vi-VN')}`}
+                    {` · ${goal.dailyMinutes} phút mỗi ngày`}
+                    {!goal.goalSet && ' (mặc định, hãy đặt mục tiêu của bạn)'}
+                  </p>
+                )}
+              </section>
+            )}
+
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -115,7 +210,7 @@ export const PersonalizedLearningPage: React.FC = () => {
               {overview?.recommendedLessons?.length ? (
                 <div className="mt-4 space-y-3">
                   {overview.recommendedLessons.map((lesson) => (
-                    <Link key={lesson.lessonId} to="/courses" className="flex items-start gap-3 rounded-xl border border-slate-100 p-4 hover:border-red-200 hover:bg-red-50/30">
+                    <Link key={lesson.lessonId} to={`/courses?hskLevel=${lesson.hskLevel}&lessonId=${lesson.lessonId}`} className="flex items-start gap-3 rounded-xl border border-slate-100 p-4 hover:border-red-200 hover:bg-red-50/30">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#B52A2A]" />
                       <div><p className="text-sm font-semibold text-slate-800">Bài {lesson.lessonNumber}: {lesson.title}</p><p className="mt-1 text-xs text-slate-500">{lesson.reason}</p></div>
                     </Link>
@@ -137,8 +232,8 @@ export const PersonalizedLearningPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            {prioritySkills.length > 0 && <p className="mt-4 text-xs leading-relaxed text-slate-500">Ưu tiên ôn: {prioritySkills.map((skill) => skill.label).join(', ')}. Điểm hiện được tính từ kết quả bạn đã làm, không suy đoán kỹ năng thiếu dữ liệu.</p>}
-            {!overview?.assessmentCompleted && <p className="mt-4 text-xs text-slate-500">Biểu đồ sẽ cập nhật sau khi bạn hoàn thành bài đánh giá.</p>}
+            {prioritySkills.length > 0 && <p className="mt-4 text-xs leading-relaxed text-slate-500">Ưu tiên ôn: {prioritySkills.map((skill) => skill.label).join(', ')}. Điểm được tính từ bài test và các lượt luyện tập gần đây, không suy đoán kỹ năng thiếu dữ liệu.</p>}
+            {!overview?.assessmentCompleted && <p className="mt-4 text-xs text-slate-500">Biểu đồ cập nhật sau mỗi bài đánh giá hoặc lượt luyện tập.</p>}
           </aside>
         </div>
     </div>

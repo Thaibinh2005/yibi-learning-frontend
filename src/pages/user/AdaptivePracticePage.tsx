@@ -19,7 +19,8 @@ import {
   BarChart3,
   Loader2,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAppSelector } from '@/app/hooks'
 import { AudioButton } from '@/components/ui/AudioButton'
 import {
   getMasterySummary,
@@ -178,8 +179,19 @@ export const AdaptivePracticePage: React.FC = () => {
   // Dashboard state
   const [mastery, setMastery] = useState<MasterySummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(true)
-  const [selectedLevel, setSelectedLevel] = useState<string>('1')
-  const [questionLimit, setQuestionLimit] = useState<number>(10)
+  // A daily plan link names the level and size; otherwise start at the learner's own level.
+  const [searchParams] = useSearchParams()
+  const learnerLevel = useAppSelector((state) => state.auth.user?.hskLevel)
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => {
+    const requested = searchParams.get('level')
+    if (requested && ['1', '2', '3', '4', '5', '6', '7-9'].includes(requested)) return requested
+    if (!learnerLevel) return '1'
+    return learnerLevel >= 7 ? '7-9' : String(learnerLevel)
+  })
+  const [questionLimit, setQuestionLimit] = useState<number>(() => {
+    const requested = Number(searchParams.get('limit'))
+    return Number.isInteger(requested) && requested >= 5 && requested <= 30 ? requested : 10
+  })
   const [startingSession, setStartingSession] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
