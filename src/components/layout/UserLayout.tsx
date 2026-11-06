@@ -118,7 +118,7 @@ export const UserLayout: React.FC = () => {
     if (location.pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
     if (location.pathname === '/courses') {
       const level = Number(new URLSearchParams(location.search).get('hskLevel') || 1)
-      return `Giáo trình HSK ${level}`
+      return `Giáo trình HSK ${level === 7 ? '7–9' : level}`
     }
 
     const main = MAIN_NAV_ITEMS.find((item) => item.path === location.pathname)
@@ -265,7 +265,7 @@ export const UserLayout: React.FC = () => {
                     className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/courses' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
                   >
                     <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/courses' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                    <span>Giáo trình HSK 1–6</span>
+                    <span>Giáo trình HSK 1–9</span>
                   </Link>
                 </div>
               )}

@@ -7,20 +7,24 @@ import { generateAiLessonContent, getLessonsByCourse, startLessonPracticeSession
 import { addLessonVocabularyToFlashcards } from '@/api/srsApi'
 import { AudioButton } from '@/components/ui/AudioButton'
 
-const HSK_LEVELS = Array.from({ length: 6 }, (_, index) => index + 1)
+// Level 7 is the combined HSK 7–9 band: the syllabus does not split it.
+const HSK_LEVELS = Array.from({ length: 7 }, (_, index) => index + 1)
+const FULL_SECTIONS = ['vocabulary', 'characters', 'grammar', 'readings', 'listenings', 'questions']
+const hskLabel =(level: number) => (level === 7 ? '7–9' : String(level))
 const TOPIC_GROUPS = [
-  { key: 'greeting', title: 'Chào hỏi & Làm quen', icon: '💬', lessonNumbers: [1, 2, 3] },
-  { key: 'people', title: 'Gia đình & Người thân', icon: '👥', lessonNumbers: [4, 5, 6] },
-  { key: 'time', title: 'Số đếm, Thời gian & Ngày', icon: '◷', lessonNumbers: [7, 11, 12] },
-  { key: 'daily', title: 'Ăn uống & Sinh hoạt', icon: '🍜', lessonNumbers: [8, 10, 13] },
-  { key: 'life', title: 'Công việc, Mua sắm & Đi lại', icon: '⌂', lessonNumbers: [9, 14, 15] },
+  { key: 'VOCABULARY', title: 'Từ vựng', icon: '♧' },
+  { key: 'GRAMMAR', title: 'Ngữ pháp', icon: '✎' },
+  { key: 'HANZI', title: 'Chữ Hán', icon: '字' },
+  { key: 'READING', title: 'Bài đọc', icon: '📖' },
+  { key: 'LISTENING', title: 'Bài nghe', icon: '🎧' },
 ]
 
 const SECTION_LABELS: Array<{ key: keyof NonNullable<Lesson['lessonPayload']>['sections']; label: string }> = [
   { key: 'objectives', label: 'Mục tiêu' }, { key: 'phonetics', label: 'Phát âm' },
   { key: 'characters', label: 'Chữ Hán' }, { key: 'vocabulary', label: 'Từ vựng' },
   { key: 'dialogues', label: 'Hội thoại' }, { key: 'grammar', label: 'Ngữ pháp' },
-  { key: 'readings', label: 'Bài đọc' }, { key: 'exercises', label: 'Bài tập' },
+  { key: 'readings', label: 'Bài đọc' }, { key: 'listenings', label: 'Bài nghe' },
+  { key: 'questions', label: 'Câu hỏi' }, { key: 'exercises', label: 'Bài tập' },
   { key: 'culture_notes', label: 'Văn hóa' },
 ]
 
@@ -35,6 +39,23 @@ const showValue = (value: unknown): string => {
   return String(value)
 }
 
+const QuestionCard: React.FC<{ item: LessonContentItem }> = ({ item }) => {
+  const [picked, setPicked] = useState<string | null>(null)
+  const options = Array.isArray(item.options) ? item.options.map(String) : []
+  return (
+    <article className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+      <p className="text-sm font-semibold text-slate-800">{showValue(item.question)}</p>
+      <div className="mt-2 space-y-1.5">
+        {options.map((option) => {
+          const state = picked !== null && option === item.answer ? 'border-emerald-300 bg-emerald-50' : picked !== null && option === picked ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'
+          return <button key={option} type="button" disabled={picked !== null} onClick={() => setPicked(option)} className={`block w-full rounded-lg border px-3 py-2 text-left text-sm text-slate-700 ${state}`}>{option}</button>
+        })}
+      </div>
+      {picked !== null && <p className="mt-2 text-xs leading-relaxed text-slate-500">{picked === item.answer ? 'Chính xác. ' : `Đáp án đúng: ${showValue(item.answer).replace(/[.。]$/, '')}. `}{showValue(item.explanation)}</p>}
+    </article>
+  )
+}
+
 const lessonTitle = (lesson: Lesson) => lesson.lessonPayload?.title || lesson.title
 const lessonNumber = (lesson: Lesson) => lesson.lessonPayload?.lesson_number ?? lesson.lessonOrder
 
@@ -42,7 +63,7 @@ export const LearningPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const requestedLevel = Number(searchParams.get('hskLevel') || 1)
-  const selectedHskLevel = Number.isInteger(requestedLevel) && requestedLevel >= 1 && requestedLevel <= 6 ? requestedLevel : 1
+  const selectedHskLevel = Number.isInteger(requestedLevel) && requestedLevel >= 1 && requestedLevel <= 7 ? requestedLevel : 1
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
@@ -60,7 +81,7 @@ export const LearningPage: React.FC = () => {
   const [answerResults, setAnswerResults] = useState<Record<string, PracticeAnswerResult>>({})
   const [answerStartedAt, setAnswerStartedAt] = useState<Record<string, number>>({})
   const [practiceSessionId, setPracticeSessionId] = useState<number | null>(null)
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['vocabulary', 'grammar']))
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['vocabulary', 'grammar', 'characters', 'readings', 'listenings', 'questions']))
   const [addingFlashcards, setAddingFlashcards] = useState(false)
   const [flashcardMessage, setFlashcardMessage] = useState('')
 
@@ -108,7 +129,7 @@ export const LearningPage: React.FC = () => {
   }, [selectedCourse?.id])
 
   useEffect(() => {
-    setSelectedTopic(TOPIC_GROUPS.find((group) => group.lessonNumbers.some((number) => lessons.some((lesson) => lessonNumber(lesson) === number)))?.key ?? TOPIC_GROUPS[0].key)
+    setSelectedTopic(TOPIC_GROUPS.find((group) => lessons.some((lesson) => lesson.contentType === group.key))?.key ?? TOPIC_GROUPS[0].key)
   }, [lessons])
 
   useEffect(() => {
@@ -118,11 +139,11 @@ export const LearningPage: React.FC = () => {
     setAnswerStartedAt({})
     setPracticeSessionId(null)
     setAiError('')
-    setOpenSections(new Set(['vocabulary', 'grammar']))
+    setOpenSections(new Set(['vocabulary', 'grammar', 'characters', 'readings', 'listenings', 'questions']))
   }, [selectedLesson?.id])
 
   const topic = TOPIC_GROUPS.find((group) => group.key === selectedTopic) ?? TOPIC_GROUPS[0]
-  const topicLessons = useMemo(() => lessons.filter((lesson) => topic.lessonNumbers.includes(lessonNumber(lesson))), [lessons, topic])
+  const topicLessons = useMemo(() => lessons.filter((lesson) => lesson.contentType === topic.key), [lessons, topic])
   const activeSections = useMemo(() => {
     const sections = selectedLesson?.lessonPayload?.sections
     if (!sections) return []
@@ -211,36 +232,72 @@ export const LearningPage: React.FC = () => {
     }
   }
 
-  const renderSourceItem = (item: LessonContentItem, index: number) => (
+  const renderSourceItem = (item: LessonContentItem, index: number) => {
+    if (typeof item.simplified === 'string') {
+      const meaning = showValue(item.meaning_vi) || showValue(item.meaning_en)
+      const example = item.example && typeof item.example === 'object' ? (item.example as Record<string, unknown>) : null
+      return (
+        <article key={index} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="font-chinese text-xl font-bold text-slate-800">{item.simplified}</span>
+            <span className="text-sm text-[#B52A2A]">{showValue(item.pinyin)}</span>
+            {showValue(item.part_of_speech) && <span className="rounded bg-white px-1.5 py-0.5 text-xs text-slate-500">{showValue(item.part_of_speech)}</span>}
+          </p>
+          {meaning ? <p className="mt-1 text-sm leading-relaxed text-slate-600">{meaning}{!item.meaning_vi && ' (tiếng Anh)'}</p> : <p className="mt-1 text-xs text-slate-400">Chưa có nghĩa.</p>}
+          {example && <p className="mt-2 border-l-2 border-slate-200 pl-3 text-sm leading-relaxed"><span className="font-chinese text-slate-800">{showValue(example.zh)}</span><span className="block text-xs text-slate-500">{showValue(example.en)}</span></p>}
+        </article>
+      )
+    }
+    if (typeof item.question === 'string') return <QuestionCard key={index} item={item} />
+    if (typeof item.text === 'string' || typeof item.transcript === 'string') {
+      const body = showValue(item.text) || showValue(item.transcript)
+      const isListening = typeof item.transcript === 'string'
+      return (
+        <article key={index} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+          <p className="text-sm font-semibold text-slate-800">{showValue(item.title)}</p>
+          {isListening && (typeof item.audio_url === 'string'
+            ? <audio controls preload="none" src={item.audio_url} className="mt-2 w-full" />
+            : <p className="mt-2 text-xs text-slate-400">Âm thanh của bài này chưa sẵn sàng.</p>)}
+          {isListening
+            ? <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-[#B52A2A]">Xem văn bản</summary><p className="font-chinese mt-2 text-base leading-loose text-slate-800">{body}</p><p className="mt-1 text-sm text-[#B52A2A]">{showValue(item.pinyin)}</p><p className="mt-1 text-sm text-slate-600">{showValue(item.translation_vi)}</p></details>
+            : <><p className="font-chinese mt-2 text-base leading-loose text-slate-800">{body}</p><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-[#B52A2A]">Xem pinyin và bản dịch</summary><p className="mt-2 text-sm text-[#B52A2A]">{showValue(item.pinyin)}</p><p className="mt-1 text-sm text-slate-600">{showValue(item.translation_vi)}</p></details></>}
+        </article>
+      )
+    }
+    if (typeof item.hanzi === 'string' && Object.keys(item).length === 1) {
+      return <span key={index} className="font-chinese grid h-14 w-14 place-items-center rounded-xl border border-slate-100 bg-slate-50/70 text-2xl text-slate-800">{item.hanzi}</span>
+    }
+    return (
     <article key={index} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
       {Object.entries(item).filter(([, value]) => showValue(value)).map(([key, value]) => (
         <p key={key} className="mb-1 last:mb-0 text-sm leading-relaxed text-slate-600"><span className="font-semibold capitalize text-slate-700">{key.replaceAll('_', ' ')}: </span>{showValue(value)}</p>
       ))}
     </article>
-  )
+    )
+  }
 
   return (
     <div className="space-y-5">
       <header className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-red-50 p-3 text-[#B52A2A]"><BookOpen className="h-5 w-5" /></div>
-          <div><h1 className="text-xl font-bold text-slate-800">Lộ trình bài học HSK {selectedHskLevel}</h1><p className="mt-1 text-sm text-slate-500">Chọn một chủ đề, mở bài học và luyện tập theo nội dung giáo trình.</p></div>
+          <div><h1 className="text-xl font-bold text-slate-800">Lộ trình bài học HSK {hskLabel(selectedHskLevel)}</h1><p className="mt-1 text-sm text-slate-500">Chọn từ vựng, ngữ pháp hoặc chữ Hán, mở bài học và luyện tập theo nội dung giáo trình.</p></div>
           <Link to="/learning-path" className="ml-auto hidden items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 sm:inline-flex"><Sparkles className="h-4 w-4" />Lộ trình cá nhân</Link>
         </div>
       </header>
 
       <nav aria-label="Chọn cấp giáo trình HSK" className="flex flex-wrap gap-2">
-        {HSK_LEVELS.map((level) => <Link key={level} to={`/courses?hskLevel=${level}`} aria-current={selectedHskLevel === level ? 'page' : undefined} className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${selectedHskLevel === level ? 'border-[#B52A2A] bg-red-50 text-[#B52A2A]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>HSK {level}</Link>)}
+        {HSK_LEVELS.map((level) => <Link key={level} to={`/courses?hskLevel=${level}`} aria-current={selectedHskLevel === level ? 'page' : undefined} className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${selectedHskLevel === level ? 'border-[#B52A2A] bg-red-50 text-[#B52A2A]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>HSK {hskLabel(level)}</Link>)}
       </nav>
 
       {error && <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
-      {loadingCourses || loadingLessons ? <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải giáo trình...</div> : courses.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Chưa có dữ liệu cho HSK {selectedHskLevel}.</div> : (
+      {loadingCourses || loadingLessons ? <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải giáo trình...</div> : courses.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Chưa có dữ liệu cho HSK {hskLabel(selectedHskLevel)}.</div> : (
         <div className="grid gap-5 lg:grid-cols-[330px_minmax(0,1fr)]">
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-            <div className="mb-3 flex items-center justify-between px-2 text-xs font-bold uppercase tracking-wide text-slate-500"><span>Chủ đề</span><span>{lessons.length} bài</span></div>
+            <div className="mb-3 flex items-center justify-between px-2 text-xs font-bold uppercase tracking-wide text-slate-500"><span>Nhóm bài</span><span>{lessons.length} bài</span></div>
             <div className="space-y-2">
               {TOPIC_GROUPS.map((group) => {
-                const count = lessons.filter((lesson) => group.lessonNumbers.includes(lessonNumber(lesson))).length
+                const count = lessons.filter((lesson) => lesson.contentType === group.key).length
                 if (!count) return null
                 const active = group.key === selectedTopic
                 return <button key={group.key} onClick={() => setSelectedTopic(group.key)} className={`w-full rounded-2xl border p-3 text-left transition ${active ? 'border-rose-200 bg-rose-50/80 text-[#B52A2A]' : 'border-transparent text-slate-700 hover:bg-slate-50'}`}>
@@ -253,7 +310,7 @@ export const LearningPage: React.FC = () => {
 
           <main className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-red-50 text-xl">{topic.icon}</span><div><h2 className="font-bold text-slate-800">{topic.title}</h2><p className="text-xs text-slate-500">{topicLessons.length} bài học trong chủ đề</p></div></div>
+              <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-red-50 text-xl">{topic.icon}</span><div><h2 className="font-bold text-slate-800">{topic.title}</h2><p className="text-xs text-slate-500">{topicLessons.length} bài học trong nhóm</p></div></div>
               <span className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600">{topicLessons.length} bài</span>
             </div>
             <div className="space-y-3 p-4 sm:p-5">
@@ -261,14 +318,15 @@ export const LearningPage: React.FC = () => {
                 const sections = lesson.lessonPayload?.sections
                 const vocab = sections?.vocabulary?.length ?? 0
                 const grammar = sections?.grammar?.length ?? 0
+                const characters = sections?.characters?.length ?? 0
                 const dialogues = sections?.dialogues?.length ?? 0
                 return <article key={lesson.id} className="group flex items-center gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-rose-200 hover:bg-rose-50/30 sm:gap-4 sm:px-5">
                   <button type="button" onClick={() => openLesson(lesson)} aria-label={`Mở bài ${lessonNumber(lesson)}: ${lessonTitle(lesson)}`} className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#F36565] to-[#D72E32] text-white shadow-[0_3px_0_#A71F24] transition hover:scale-105"><Play className="ml-0.5 h-5 w-5 fill-current" /></button>
-                  <button type="button" onClick={() => openLesson(lesson)} className="min-w-0 flex-1 text-left"><h3 className="truncate font-bold text-slate-800">Bài {lessonNumber(lesson)}: {lessonTitle(lesson)}</h3><div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500"><span className="rounded-full bg-slate-100 px-2 py-1">♧ {vocab} từ vựng</span><span className="rounded-full bg-slate-100 px-2 py-1">文 {grammar} ngữ pháp</span><span className="rounded-full bg-slate-100 px-2 py-1">▢ {dialogues} hội thoại</span></div></button>
+                  <button type="button" onClick={() => openLesson(lesson)} className="min-w-0 flex-1 text-left"><h3 className="truncate font-bold text-slate-800">Bài {lessonNumber(lesson)}: {lessonTitle(lesson)}</h3><div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">{vocab > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">♧ {vocab} từ vựng</span>}{grammar > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">文 {grammar} ngữ pháp</span>}{characters > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">字 {characters} chữ Hán</span>}{dialogues > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">▢ {dialogues} hội thoại</span>}</div></button>
                   <button type="button" onClick={() => openLesson(lesson)} className="hidden items-center gap-1 text-xs font-semibold text-slate-400 transition group-hover:text-[#B52A2A] sm:inline-flex"><span>12 phút</span><ChevronRight className="h-4 w-4" /></button>
                 </article>
               })}
-              {topicLessons.length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">Chủ đề này chưa có bài học trong giáo trình.</p>}
+              {topicLessons.length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">Nhóm này chưa có bài học trong giáo trình.</p>}
             </div>
           </main>
         </div>
@@ -277,7 +335,7 @@ export const LearningPage: React.FC = () => {
       {lessonModalOpen && selectedLesson && createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 p-0 backdrop-blur-[2px] sm:p-3 md:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) setLessonModalOpen(false) }}>
         <section role="dialog" aria-modal="true" aria-labelledby="lesson-modal-title" className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:h-[92dvh] sm:max-h-[calc(100dvh-1.5rem)] sm:max-w-5xl sm:rounded-2xl md:rounded-3xl">
           <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-3 py-3 sm:gap-4 sm:px-6 sm:py-5">
-            <div className="flex min-w-0 items-start gap-3"><button type="button" onClick={() => practiceMode ? setPracticeMode(false) : setLessonModalOpen(false)} aria-label="Quay lại" className="mt-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">{practiceMode ? <ArrowLeft className="h-5 w-5" /> : <X className="h-5 w-5" />}</button><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#B52A2A]">HSK {selectedHskLevel} · Bài {lessonNumber(selectedLesson)}</p><h2 id="lesson-modal-title" className="mt-1 text-xl font-bold text-slate-800">{lessonTitle(selectedLesson)}</h2><p className="mt-1 text-xs text-slate-500">{selectedLesson.lessonPayload?.source?.book_title ?? selectedCourse?.title}{selectedLesson.lessonPayload?.source?.start_page ? ` · Trang ${selectedLesson.lessonPayload.source.start_page}-${selectedLesson.lessonPayload.source.end_page}` : ''}</p></div></div>
+            <div className="flex min-w-0 items-start gap-3"><button type="button" onClick={() => practiceMode ? setPracticeMode(false) : setLessonModalOpen(false)} aria-label="Quay lại" className="mt-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">{practiceMode ? <ArrowLeft className="h-5 w-5" /> : <X className="h-5 w-5" />}</button><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#B52A2A]">HSK {hskLabel(selectedHskLevel)} · Bài {lessonNumber(selectedLesson)}</p><h2 id="lesson-modal-title" className="mt-1 text-xl font-bold text-slate-800">{lessonTitle(selectedLesson)}</h2><p className="mt-1 text-xs text-slate-500">{selectedLesson.lessonPayload?.source?.book_title ?? selectedCourse?.title}{selectedLesson.lessonPayload?.source?.start_page ? ` · Trang ${selectedLesson.lessonPayload.source.start_page}-${selectedLesson.lessonPayload.source.end_page}` : ''}</p></div></div>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {!practiceMode && <button type="button" onClick={addFlashcards} disabled={addingFlashcards || vocabularyCount === 0} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Layers className="h-4 w-4" />{addingFlashcards ? 'Đang thêm...' : 'Flashcard'}</button>}
               {!practiceMode && <button type="button" onClick={startPractice} disabled={generating || !selectedLesson.lessonPayload} className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-60">{generating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{generating ? 'AI đang chuẩn bị bài học...' : generated ? 'Học lại' : 'Bắt đầu học'}</button>}
@@ -297,17 +355,17 @@ export const LearningPage: React.FC = () => {
               <p className="text-center text-[11px] text-slate-400">Bài luyện tập được tạo từ dữ liệu của bài học · {generated.model}</p>
             </div> : <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="min-w-0 space-y-5">
-                <section className="rounded-2xl bg-slate-50 p-5"><h3 className="font-bold text-slate-800">Bài này học gì?</h3><p className="mt-2 text-sm leading-relaxed text-slate-600">{selectedLesson.lessonPayload?.sections?.objectives?.map((item) => showValue(item)).filter(Boolean).join(' ') || `Làm quen với nội dung bài ${lessonNumber(selectedLesson)} qua từ vựng, hội thoại và điểm ngữ pháp trong giáo trình.`}</p><div className="mt-4 flex flex-wrap gap-2">{activeSections.map((section) => <span key={section.key} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">{section.label} · {section.items.length}</span>)}</div></section>
+                <section className="rounded-2xl bg-slate-50 p-5"><h3 className="font-bold text-slate-800">Bài này học gì?</h3><p className="mt-2 text-sm leading-relaxed text-slate-600">{selectedLesson.lessonPayload?.sections?.objectives?.map((item) => showValue(item)).filter(Boolean).join(' ') || (selectedLesson.contentType === 'READING' ? 'Đọc đoạn văn, rồi trả lời câu hỏi để kiểm tra mức hiểu.' : selectedLesson.contentType === 'LISTENING' ? 'Nghe đoạn văn, rồi trả lời câu hỏi để kiểm tra mức hiểu.' : `Làm quen với nội dung bài ${lessonNumber(selectedLesson)} qua từ vựng, hội thoại và điểm ngữ pháp trong giáo trình.`)}</p><div className="mt-4 flex flex-wrap gap-2">{activeSections.map((section) => <span key={section.key} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">{section.label} · {section.items.length}</span>)}</div></section>
                 {sourceExerciseCount > 0 && <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-500"><b className="text-slate-700">Bài tập trong sách: {sourceExerciseCount} mục.</b> Đây là nội dung gốc được trích từ giáo trình. Bộ câu trắc nghiệm AI sẽ xuất hiện riêng sau khi bấm “Bắt đầu học”.</div>}
                 {activeSections.map((section) => {
                   const isOpen = openSections.has(section.key)
-                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className="space-y-3 border-t border-slate-100 p-4">{section.items.slice(0, section.key === 'vocabulary' ? 8 : 5).map(renderSourceItem)}{section.items.length > (section.key === 'vocabulary' ? 8 : 5) && <p className="text-xs text-slate-400">Còn {section.items.length - (section.key === 'vocabulary' ? 8 : 5)} nội dung khác sẽ có trong phần học.</p>}</div>}</section>
+                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className={`border-t border-slate-100 p-4 ${section.key === 'characters' ? 'flex flex-wrap gap-2' : 'space-y-3'}`}>{section.items.slice(0, FULL_SECTIONS.includes(section.key) ? undefined : 5).map(renderSourceItem)}{!FULL_SECTIONS.includes(section.key) && section.items.length > 5 && <p className="text-xs text-slate-400">Còn {section.items.length - 5} nội dung khác sẽ có trong phần học.</p>}{section.key === 'vocabulary' && <p className="text-xs text-slate-400">Nghĩa: CVDICT (CC BY-SA 4.0), dịch tự động, chưa kiểm duyệt hết. Câu ví dụ: Tatoeba (CC BY 2.0 FR).</p>}</div>}</section>
                 })}
               </div>
-              <aside className="h-fit min-w-0 rounded-2xl border border-slate-200 p-4 lg:sticky lg:top-0"><h3 className="font-bold text-slate-800">Trong bài học</h3><div className="mt-3 space-y-2 text-sm text-slate-600"><p className="flex justify-between"><span>Từ vựng</span><b>{vocabularyCount}</b></p><p className="flex justify-between"><span>Ngữ pháp</span><b>{grammarCount}</b></p><p className="flex justify-between"><span>Hội thoại</span><b>{dialogueCount}</b></p><p className="flex justify-between"><span>Thời lượng</span><b className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />12 phút</b></p></div><p className="mt-4 rounded-xl bg-violet-50 p-3 text-xs leading-relaxed text-violet-800">Bấm “Bắt đầu học” để vào bài luyện tập trắc nghiệm do AI tạo từ dữ liệu của bài này.</p></aside>
+              <aside className="h-fit min-w-0 rounded-2xl border border-slate-200 p-4 lg:sticky lg:top-0"><h3 className="font-bold text-slate-800">Trong bài học</h3><div className="mt-3 space-y-2 text-sm text-slate-600">{activeSections.map((section) => <p key={section.key} className="flex justify-between"><span>{section.label}</span><b>{section.items.length}</b></p>)}<p className="flex justify-between"><span>Thời lượng</span><b className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />12 phút</b></p></div><p className="mt-4 rounded-xl bg-violet-50 p-3 text-xs leading-relaxed text-violet-800">Bấm “Bắt đầu học” để vào bài luyện tập trắc nghiệm do AI tạo từ dữ liệu của bài này.</p></aside>
             </div>}
           </div>
-          {!practiceMode && <footer className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-7"><span>{vocabularyCount} từ trong bài · Có thể thêm vào bộ flashcard cá nhân</span><button type="button" onClick={() => setLessonModalOpen(false)} className="font-semibold text-slate-500 hover:text-slate-800">Đóng</button></footer>}
+          {!practiceMode && <footer className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-7"><span>{vocabularyCount > 0 ? `${vocabularyCount} từ trong bài · Có thể thêm vào bộ flashcard cá nhân` : ''}</span><button type="button" onClick={() => setLessonModalOpen(false)} className="font-semibold text-slate-500 hover:text-slate-800">Đóng</button></footer>}
         </section>
       </div>, document.body)}
     </div>
