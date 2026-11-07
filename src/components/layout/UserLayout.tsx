@@ -48,7 +48,7 @@ const VOCABULARY_SUB_ITEMS = [
 const FOCUS_PAGES = /^\/learning-path\/(lesson\/|level-test\/|mistakes\/review)/
 
 const navRow = (active: boolean) =>
-  `flex items-center gap-3 rounded-2xl border-2 px-3.5 py-2.5 text-[15px] font-bold transition-colors ${
+  `flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-[15px] font-bold transition-colors ${
     active ? 'border-rose-200 bg-rose-50 text-brand' : 'border-transparent text-slate-600 hover:bg-slate-100'
   }`
 
@@ -201,7 +201,7 @@ export const UserLayout: React.FC = () => {
 
           <Link to="/courses" aria-current={location.pathname === '/courses' ? 'page' : undefined} className={navRow(location.pathname === '/courses')}>
             <Library className="h-5 w-5 shrink-0" />
-            Thư viện giáo trình
+            <span className="whitespace-nowrap">Thư viện giáo trình</span>
           </Link>
 
           <Link to="/tips" aria-current={location.pathname === '/tips' ? 'page' : undefined} className={navRow(location.pathname === '/tips')}>
@@ -240,10 +240,7 @@ export const UserLayout: React.FC = () => {
           </div>
 
           {!isAuthenticated ? (
-            <nav className="flex shrink-0 items-center gap-2" aria-label="Tài khoản">
-              <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100">Đăng nhập</Link>
-              <Link to="/register" className="btn-chunky btn-brand px-4 py-2 text-sm">Đăng ký</Link>
-            </nav>
+            <Link to="/login" state={{ from: { pathname: location.pathname, search: location.search } }} className="btn-chunky btn-brand shrink-0 px-4 py-2 text-sm">Đăng nhập</Link>
           ) : (
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-sm font-extrabold tabular-nums text-orange-600" title={`${studyStats?.streakDays ?? 0} ngày học liên tiếp`} aria-label={`${studyStats?.streakDays ?? 0} ngày học liên tiếp`}>

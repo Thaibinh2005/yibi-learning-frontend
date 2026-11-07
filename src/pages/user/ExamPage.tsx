@@ -11,6 +11,8 @@ import {
 } from '@/api/learningPathApi'
 import { PinyinInput } from '@/components/exam/PinyinInput'
 import { AudioButton } from '@/components/ui/AudioButton'
+import { GuestNotice } from '@/components/ui/GuestNotice'
+import { useAppSelector } from '@/app/hooks'
 
 const levelName = (level: number) => (level >= 7 ? 'HSK 7–9' : `HSK ${level}`)
 const clock = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
@@ -49,6 +51,7 @@ const QuestionBlock: React.FC<{
 
 /** A timed practice exam on the computer: listening, reading and typing Chinese. */
 export const ExamPage: React.FC = () => {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const [learnerLevel, setLearnerLevel] = useState<number | null>(null)
   const [paper, setPaper] = useState<ExamPaper | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -60,8 +63,9 @@ export const ExamPage: React.FC = () => {
   latestAnswers.current = answers
 
   useEffect(() => {
+    if (!isAuthenticated) return
     getRoadmap().then((roadmap) => setLearnerLevel(roadmap.learnerLevel)).catch(() => setError('Không tải được trình độ của bạn.'))
-  }, [])
+  }, [isAuthenticated])
 
   const start = async (level: number) => {
     setBusy(true)
@@ -126,7 +130,8 @@ export const ExamPage: React.FC = () => {
           <ArrowRight className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
         </Link>
         {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
-        {learnerLevel === null && !error && <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải...</div>}
+        {!isAuthenticated && <GuestNotice title="Đăng nhập để vào thi" message="Đề thi thử được tạo theo cấp của bạn và lưu điểm để so với mục tiêu. Hãy đăng nhập để bắt đầu làm bài." />}
+        {isAuthenticated && learnerLevel === null && !error && <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải...</div>}
         <div className="grid gap-4 md:grid-cols-2">
           {learnerLevel !== null && Array.from({ length: learnerLevel }, (_, index) => learnerLevel - index).map((level) => (
             <div key={level} className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
