@@ -96,6 +96,15 @@ export interface PracticeAnswerResult {
   explanation: string
 }
 
+export const getCompletedLessonIds = async (): Promise<number[]> => {
+  const response = await axiosClient.get<ApiResponse<{ lessonId: number; status: string }[]>>('/progress/my-lessons')
+  return response.data.data.filter((item) => item.status === 'COMPLETED').map((item) => item.lessonId)
+}
+
+export const markLessonCompleted = async (lessonId: number): Promise<void> => {
+  await axiosClient.post('/progress/update', { lessonId, status: 'COMPLETED' })
+}
+
 export const submitPracticeAnswer = async (
   sessionId: number,
   questionCode: string,

@@ -1,201 +1,149 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppSelector } from '@/app/hooks'
-import {
-  BookOpen,
-  GraduationCap,
-  Flame,
-  Award,
-  ArrowRight,
-  Sparkles,
-  Layers,
-  CheckCircle2,
-} from 'lucide-react'
+import { getLearningPathOverview, getStudyStats, getTodayPlan, type DailyPlan, type LearningPathOverview, type StudyStats } from '@/api/learningPathApi'
+import { GoalRing } from '@/components/learningpath/GoalRing'
+import { levelLabel } from '@/components/learningpath/GoalForm'
+import { ArrowRight, BookMarked, Check, FileCheck, Flame, History, Layers, Library, Play, Trophy } from 'lucide-react'
 
-const PRIMARY = '#B52A2A'
+const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+
+/** Minutes studied per day against the daily goal: one series, so the title names it and no legend is needed. */
+const WeekChart: React.FC<{ stats: StudyStats }> = ({ stats }) => {
+  const goal = stats.dailyGoalMinutes
+  const top = Math.max(goal, ...stats.week.map((day) => day.minutes), 1)
+  const goalAt = (goal / top) * 100
+  const today = stats.week[stats.week.length - 1]?.date
+  return (
+    <section className="card-soft p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-lg font-extrabold text-slate-900">Thời gian học 7 ngày qua</h2>
+        <p className="text-xs font-medium text-slate-500">Hôm nay {stats.answersToday} câu{stats.answersToday > 0 ? `, đúng ${stats.accuracyToday}%` : ''} · {stats.nodesCompleted} bài đã xong</p>
+      </div>
+      <div className="relative mt-8 h-36">
+        <div className="absolute inset-x-0 border-t-2 border-dashed border-slate-300" style={{ bottom: `${goalAt}%` }}>
+          <span className="absolute -top-5 right-0 text-[11px] font-semibold text-slate-500">Mục tiêu {goal} phút</span>
+        </div>
+        <ol className="absolute inset-0 flex items-end justify-around gap-2 border-b border-slate-200">
+          {stats.week.map((day) => {
+            const date = new Date(`${day.date}T00:00:00`)
+            const label = `${date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}: ${day.minutes} phút${day.goalMet ? ', đạt mục tiêu' : ''}`
+            return (
+              <li key={day.date} className="group relative flex h-full w-full max-w-10 flex-col items-center justify-end" aria-label={label}>
+                <span className="pointer-events-none absolute z-10 -translate-y-full whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 transition group-hover:opacity-100" style={{ bottom: `${(day.minutes / top) * 100 + 4}%` }}>{label}</span>
+                {day.minutes > 0 && <span className="mb-1 text-xs font-bold tabular-nums text-slate-700">{day.minutes}</span>}
+                <span className="block w-full rounded-t bg-brand transition-[height] duration-500" style={{ height: day.minutes > 0 ? `${Math.max((day.minutes / top) * 100 - 10, 4)}%` : '2px', opacity: day.minutes > 0 ? 1 : 0.15 }} />
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+      <ol className="mt-2 flex justify-around gap-2" aria-hidden="true">
+        {stats.week.map((day) => (
+          <li key={day.date} className={`flex w-full max-w-10 flex-col items-center text-xs ${day.date === today ? 'font-extrabold text-slate-900' : 'font-medium text-slate-500'}`}>
+            {WEEKDAYS[new Date(`${day.date}T00:00:00`).getDay()]}
+            <span className={`mt-1 grid h-4 w-4 place-items-center rounded-full ${day.goalMet ? 'bg-emerald-600 text-white' : ''}`}>{day.goalMet && <Check className="h-3 w-3" strokeWidth={3} />}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+const Stat: React.FC<{ icon: React.ElementType; tint: string; label: string; value: string; note: string }> = ({ icon: Icon, tint, label, value, note }) => (
+  <div className="card-soft flex items-center gap-4 p-4 sm:p-5">
+    <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${tint}`}><Icon className="h-6 w-6" /></span>
+    <div className="min-w-0">
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="text-2xl font-extrabold tracking-tight text-slate-900">{value}</p>
+      <p className="truncate text-xs text-slate-500">{note}</p>
+    </div>
+  </div>
+)
+
+const SHORTCUTS = [
+  { to: '/learning-path/mistakes', icon: History, tint: 'bg-amber-100 text-amber-700', title: 'Câu từng sai', note: 'Ôn lại đến khi thuộc' },
+  { to: '/vocabulary/daily', icon: BookMarked, tint: 'bg-sky-100 text-sky-700', title: 'Từ vựng mỗi ngày', note: 'Vài từ mới cho hôm nay' },
+  { to: '/exams', icon: FileCheck, tint: 'bg-violet-100 text-violet-700', title: 'Thi thử trên máy', note: 'Nghe, đọc, gõ tiếng Trung' },
+  { to: '/courses', icon: Library, tint: 'bg-rose-100 text-brand', title: 'Thư viện giáo trình', note: 'Tra cứu HSK 1–9' },
+]
 
 export const DashboardPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user)
-  const username = user?.username || 'Bạn'
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+  const username = user?.username || 'bạn'
+  const [stats, setStats] = useState<StudyStats | null>(null)
+  const [plan, setPlan] = useState<DailyPlan | null>(null)
+  const [overview, setOverview] = useState<LearningPathOverview | null>(null)
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    getStudyStats().then(setStats).catch(() => setStats(null))
+    getTodayPlan().then(setPlan).catch(() => setPlan(null))
+    getLearningPathOverview().then(setOverview).catch(() => setOverview(null))
+  }, [isAuthenticated])
+
+  const dueCards = stats?.dueCards ?? 0
+  const level = overview?.availableHskLevel ?? user?.hskLevel ?? 1
+  const next = plan?.items.find((item) => item.type === 'LESSON')
+  const percent = stats?.goalPercent ?? 0
 
   return (
-    <div className="space-y-6">
-      {/* ── Welcome Banner Card ────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
-        {/* Subtle decorative background Hanzi */}
-        <div
-          className="absolute -right-6 -bottom-8 select-none pointer-events-none text-slate-100 font-bold text-9xl leading-none opacity-60 font-chinese"
-          style={{ fontFamily: "'Noto Serif SC', serif" }}
-        >
-          学
-        </div>
-
-        <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-[#B52A2A] border border-rose-100">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>YiBi AI Chinese Learning Platform</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Chào mừng <span style={{ color: PRIMARY }}>{username}</span> đến với YiBi!
-          </h1>
-
-          <p className="text-sm text-slate-500 leading-relaxed">
-            “千里之行，始于足下” — Hành trình vạn dặm bắt đầu từ một bước chân. Hãy tiếp tục duy trì thói quen học tiếng Trung mỗi ngày để đạt mục tiêu HSK nhé!
-          </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <Link
-              to="/courses"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm active:scale-95"
-              style={{ backgroundColor: PRIMARY }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#9e2424')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = PRIMARY)}
-            >
-              <BookOpen className="w-4 h-4" />
-              Tiếp tục bài học
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              to="/flashcards"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
-            >
-              <Layers className="w-4 h-4 text-slate-500" />
-              Ôn 12 từ SRS hôm nay
+    <div className="space-y-5">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#C8322B] to-[#8C1F1A] p-6 text-white sm:p-8">
+        <span className="font-chinese pointer-events-none absolute -bottom-12 right-32 hidden select-none sm:block text-[13rem] font-bold leading-none text-white/[0.07]" aria-hidden="true">学</span>
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            {isAuthenticated && (
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
+                <Flame className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
+                {stats?.streakDays ?? 0} ngày liên tiếp
+              </p>
+            )}
+            <h1 className="mt-3 break-words text-3xl font-extrabold tracking-tight sm:text-4xl">Chào {username}!</h1>
+            <p className="mt-2 text-sm font-medium text-white/90">{!isAuthenticated ? 'Đăng nhập để có lộ trình riêng và lưu tiến độ học của bạn.' : next ? 'Bài tiếp theo của bạn đã sẵn sàng.' : 'Hôm nay học gì tiếp nhé?'}</p>
+            <Link to={next?.link ?? '/learning-path'} className="btn-chunky mt-5 max-w-full bg-white px-6 py-3.5 text-base text-brand [--edge:#E7E5E4]">
+              <Play className="h-5 w-5 shrink-0 fill-current" />
+              <span className="truncate">{next ? `Học tiếp: ${next.title}` : isAuthenticated ? 'Mở lộ trình' : 'Bắt đầu học'}</span>
             </Link>
           </div>
+          {isAuthenticated && <div className="flex items-center gap-4 sm:flex-col sm:gap-2 sm:text-center">
+            <GoalRing percent={percent} size={112} stroke={12} trackColor="rgba(255,255,255,0.2)" color="#FBBF24">
+              <span>
+                <span className="block text-2xl font-extrabold leading-none tabular-nums">{stats?.todayMinutes ?? 0}</span>
+                <span className="text-[11px] font-semibold text-white/85">/{stats?.dailyGoalMinutes ?? 0} phút</span>
+              </span>
+            </GoalRing>
+            <p className="text-xs font-semibold text-white/90">Mục tiêu hôm nay: {percent}%</p>
+          </div>}
         </div>
+      </section>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat icon={Trophy} tint="bg-amber-100 text-amber-700" label="Cấp hiện tại" value={isAuthenticated ? levelLabel(level) : '—'} note={!isAuthenticated ? 'Đăng nhập để xem' : overview?.goal ? `Mục tiêu: ${levelLabel(overview.goal.targetLevel)}` : 'Theo lộ trình của bạn'} />
+        <Stat icon={Layers} tint="bg-emerald-100 text-emerald-700" label="Thẻ cần ôn hôm nay" value={isAuthenticated ? String(dueCards) : '—'} note={!isAuthenticated ? 'Đăng nhập để xem' : dueCards > 0 ? 'Ôn ngay để không quên' : 'Không có thẻ đến hạn'} />
+        {stats?.targetScore != null ? (
+          <Stat icon={FileCheck} tint="bg-violet-100 text-violet-700" label="Điểm so với mục tiêu" value={`${stats.bestTowardTarget ?? '—'}/${stats.targetScore}`} note={stats.bestTowardTarget != null ? `Ước tính từ đề thi thử, thang ${stats.targetScale}` : 'Làm đề thi thử để biết điểm ước tính'} />
+        ) : <Stat icon={FileCheck} tint="bg-violet-100 text-violet-700" label="Thi thử cao nhất" value={stats?.bestExamScore != null ? `${stats.bestExamScore}%` : '—'} note={!isAuthenticated ? 'Đăng nhập để xem' : stats?.bestExamLevel != null ? `Đề mô phỏng ${levelLabel(stats.bestExamLevel)}` : 'Chưa làm đề nào'} />}
       </div>
 
-      {/* ── Key Metrics Grid ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: HSK Level */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Cấp độ hiện tại</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
-              <Award className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">
-              HSK {user?.hskLevel || 1}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Mục tiêu tiếp theo: HSK {(user?.hskLevel || 1) + 1}
-            </p>
-          </div>
-        </div>
+      {stats && <WeekChart stats={stats} />}
 
-        {/* Metric 2: Streak */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Chuỗi ngày học</span>
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
-              <Flame className="w-4 h-4 fill-orange-500" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">3 ngày</div>
-            <p className="text-xs text-slate-400 mt-1">Duy trì liên tục để nhận huy hiệu</p>
-          </div>
+      <section>
+        <h2 className="mb-3 text-lg font-extrabold text-slate-900">Luyện thêm</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {SHORTCUTS.map(({ to, icon: Icon, tint, title, note }) => (
+            <Link key={to} to={to} className="card-soft group flex items-center gap-3 !rounded-2xl p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${tint}`}><Icon className="h-5 w-5" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-slate-800">{title}</span>
+                <span className="block truncate text-xs text-slate-500">{note}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" />
+            </Link>
+          ))}
         </div>
-
-        {/* Metric 3: SRS Flashcards */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Từ vựng cần ôn</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
-              <BookOpen className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">12 từ vựng</div>
-            <p className="text-xs text-slate-400 mt-1">Thuật toán lặp lại ngắt quãng SM-2</p>
-          </div>
-        </div>
-
-        {/* Metric 4: Exam Status */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Điểm thi thử cao nhất</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
-              <GraduationCap className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">95 / 100</div>
-            <p className="text-xs text-slate-400 mt-1">Đề HSK 1 Mẫu số 01 (Đạt)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Feature Cards Grid ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Khóa học */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-[#B52A2A]">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-800">
-              Khóa học HSK Chuẩn
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Lộ trình bài học theo giáo trình chuẩn HSK với chữ Hán, Pinyin, nghĩa tiếng Việt và audio giọng Bắc Kinh.
-            </p>
-          </div>
-          <Link
-            to="/courses"
-            className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#B52A2A] hover:underline"
-          >
-            Vào học ngay <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Card 2: Ôn tập Flashcard SRS */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-800">
-              Flashcard Thuật Toán SRS
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Ghi nhớ từ vựng thông minh bằng SuperMemo SM-2. Tự động tính toán chu kỳ lặp lại giúp nhớ lâu không quên.
-            </p>
-          </div>
-          <Link
-            to="/flashcards"
-            className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
-          >
-            Bắt đầu ôn tập <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Card 3: Thi thử trực tuyến */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-800">
-              Thi Thử HSK Thực Chiến
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Mô phỏng kỳ thi HSK thật với đồng hồ đếm ngược, phần nghe Audio chuẩn và chấm điểm tức thì.
-            </p>
-          </div>
-          <Link
-            to="/exams"
-            className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:underline"
-          >
-            Làm bài thi thử <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
+      </section>
     </div>
   )
 }
