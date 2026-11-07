@@ -17,6 +17,21 @@ export const authApi = {
     return response.data
   },
 
+  forgotPassword: async (email: string): Promise<ApiResponse<void>> => {
+    const response = await axiosClient.post<ApiResponse<void>>('/auth/forgot-password', { email })
+    return response.data
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse<void>> => {
+    const response = await axiosClient.post<ApiResponse<void>>('/auth/reset-password', { token, newPassword })
+    return response.data
+  },
+
+  exchangeGoogleCode: async (code: string): Promise<ApiResponse<AuthResponse>> => {
+    const response = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/google/exchange', { code })
+    return response.data
+  },
+
   refresh: async (refreshToken: string): Promise<ApiResponse<AuthResponse>> => {
     const response = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/refresh', { refreshToken })
     return response.data

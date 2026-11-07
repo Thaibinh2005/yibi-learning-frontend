@@ -309,7 +309,7 @@ export const PracticeSession: React.FC<{
             </div>
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#B52A2A] rounded-full transition-all duration-300"
+                className="h-full bg-[#C8322B] rounded-full transition-all duration-300"
                 style={{
                   width: `${(((currentIdx + 1) / (queue.length || 1)) * 100).toFixed(0)}%`,
                 }}
@@ -493,7 +493,7 @@ export const PracticeSession: React.FC<{
                 <button
                   type="button"
                   onClick={handleNextQuestion}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#B52A2A] text-white font-bold text-sm shadow-md hover:bg-[#9c2323] transition-all transform hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#C8322B] text-white font-bold text-sm shadow-md hover:bg-[#9c2323] transition-all transform hover:-translate-y-0.5"
                 >
                   <span>
                     {currentIdx + 1 < queue.length || retries.length > 0
@@ -514,7 +514,7 @@ export const PracticeSession: React.FC<{
       {mode === 'SUMMARY' && activeSession && (
         <div className="space-y-6 max-w-2xl mx-auto text-center py-6 animate-in zoom-in-95 duration-200">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 md:p-10 shadow-xs space-y-6">
-            <div className="w-16 h-16 rounded-3xl bg-red-50 text-[#B52A2A] flex items-center justify-center mx-auto shadow-sm">
+            <div className="w-16 h-16 rounded-3xl bg-red-50 text-[#C8322B] flex items-center justify-center mx-auto shadow-sm">
               <Award className="w-8 h-8" />
             </div>
 
@@ -588,7 +588,7 @@ export const PracticeSession: React.FC<{
               <button
                 type="button"
                 onClick={() => startSession()}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#B52A2A] text-white font-bold text-sm shadow-sm hover:bg-[#9c2323] transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#C8322B] text-white font-bold text-sm shadow-sm hover:bg-[#9c2323] transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Luyện tập lượt tiếp theo</span>
@@ -607,7 +607,7 @@ export const PracticeSession: React.FC<{
           {updatedPlan?.items[0] && (
             <Link
               to={updatedPlan.items[0].link}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-[#B52A2A] px-5 py-4 text-left text-white transition hover:bg-[#9e2424]"
+              className="flex items-center justify-between gap-3 rounded-2xl bg-[#C8322B] px-5 py-4 text-left text-white transition hover:bg-[#A32620]"
             >
               <span className="min-w-0">
                 <span className="block text-xs font-medium text-white/80">Việc tiếp theo trong lộ trình</span>

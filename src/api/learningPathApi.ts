@@ -131,10 +131,21 @@ export interface QuizQuestion {
   fromMistakes: boolean
 }
 
+/** One moment of a woven lesson: something to learn, a question, or a line to read aloud. */
+export interface LessonStep {
+  kind: 'TEACH_WORD' | 'TEACH_GRAMMAR' | 'QUESTION' | 'SPEAK'
+  questionId?: string | null
+  lineIndex?: number | null
+  data?: PathContentItem | null
+}
+
 export interface PathQuiz {
   seed: number
+  /** 0 when finishing is enough; only a unit test or level test has a score to reach. */
   passPercent: number
   questions: QuizQuestion[]
+  /** Only a woven lesson has these; other quizzes are just their questions. */
+  steps?: LessonStep[] | null
 }
 
 export interface CheckedAnswer {
@@ -180,6 +191,10 @@ export const getMistakes = async () =>
 export interface SpeakingResult {
   accuracy: number
   passed: boolean
+  /** One per character of the line: ok, bad, or skip for punctuation. */
+  marks?: Array<{ han: string; mark: 'ok' | 'bad' | 'skip' }>
+  /** What the recognizer heard. */
+  heard?: string
 }
 
 export const getPathNode = async (id: number) =>
@@ -224,6 +239,10 @@ export interface StudyStats {
   bestExamScore?: number | null
   bestExamLevel?: number | null
   week: Array<{ date: string; minutes: number; goalMet: boolean }>
+  /** Set when the learner has a target score: the target, the best estimate so far on that test, and its scale. */
+  targetScore?: number | null
+  bestTowardTarget?: number | null
+  targetScale?: number | null
 }
 
 export const getStudyStats = async () =>
@@ -258,6 +277,10 @@ export interface ExamResult {
   total: number
   passed: boolean
   review: Array<{ id: string; correct: boolean; answer: string; explanation: string }>
+  estimatedScore: number
+  scale: number
+  /** Set when this level is the one the learner's HSK target is about. */
+  targetScore?: number | null
 }
 
 export const startMockExam = async (level: number) =>

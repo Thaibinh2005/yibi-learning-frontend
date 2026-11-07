@@ -87,7 +87,7 @@ export const SentenceTiles: React.FC<{
             type="button"
             disabled={picked.length !== tokens.length}
             onClick={() => onCheck(picked.map(textOf).join(''))}
-            className="rounded-2xl bg-[#B52A2A] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#9e2424] disabled:opacity-40"
+            className="rounded-2xl bg-[#C8322B] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#A32620] disabled:opacity-40"
           >
             Kiểm tra
           </button>

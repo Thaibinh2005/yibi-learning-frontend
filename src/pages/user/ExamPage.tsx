@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Clock, Ear, FileCheck, Keyboard, LoaderCircle, Newspaper, Play, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Clock, Ear, FileCheck, Keyboard, LoaderCircle, Mic, Newspaper, Play, XCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   getRoadmap,
   startMockExam,
@@ -32,7 +33,7 @@ const QuestionBlock: React.FC<{
         {question.options.map((option) => {
           const state = review
             ? option === review.answer ? 'border-emerald-400 bg-emerald-50' : option === value ? 'border-rose-400 bg-rose-50' : 'border-slate-200 opacity-60'
-            : option === value ? 'border-[#B52A2A] bg-red-50 text-[#B52A2A]' : 'border-slate-200 hover:bg-slate-50'
+            : option === value ? 'border-[#C8322B] bg-red-50 text-[#C8322B]' : 'border-slate-200 hover:bg-slate-50'
           return <button key={option} type="button" disabled={Boolean(review)} onClick={() => onChange(option)} className={`font-chinese rounded-lg border px-3 py-2 text-left text-sm ${state}`}>{option}</button>
         })}
       </div>
@@ -116,6 +117,14 @@ export const ExamPage: React.FC = () => {
             <span className="flex items-center gap-1"><Keyboard className="h-3.5 w-3.5" />Có bộ gõ pinyin trên trang</span>
           </div>
         </div>
+        <Link to="/exams/hskk" className="card-soft group flex items-center gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-100 text-sky-700"><Mic className="h-6 w-6" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-extrabold text-slate-900">Thi thử HSKK (nói)</span>
+            <span className="block text-sm text-slate-500">Nhắc lại, trả lời câu hỏi và đọc thành tiếng, có ghi âm và chấm điểm ước lượng.</span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+        </Link>
         {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
         {learnerLevel === null && !error && <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải...</div>}
         <div className="grid gap-4 md:grid-cols-2">
@@ -125,8 +134,8 @@ export const ExamPage: React.FC = () => {
                 <p className="font-semibold text-slate-800">Đề luyện {levelName(level)}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{level === learnerLevel ? 'Cấp hiện tại của bạn' : 'Ôn lại cấp đã qua'}</p>
               </div>
-              <button type="button" disabled={busy} onClick={() => start(level)} className="flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-[#B52A2A] hover:bg-rose-100 disabled:opacity-50">
-                <Play className="h-3 w-3 fill-[#B52A2A]" /> Vào thi
+              <button type="button" disabled={busy} onClick={() => start(level)} className="flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-[#C8322B] hover:bg-rose-100 disabled:opacity-50">
+                <Play className="h-3 w-3 fill-[#C8322B]" /> Vào thi
               </button>
             </div>
           ))}
@@ -143,13 +152,14 @@ export const ExamPage: React.FC = () => {
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-xs">
         <p className="font-bold text-slate-800">Đề luyện {levelName(paper.level)}</p>
         {running && <span className={`inline-flex items-center gap-1.5 font-mono text-lg font-bold ${secondsLeft < 120 ? 'text-rose-600' : 'text-slate-700'}`} role="timer"><Clock className="h-4 w-4" />{clock(secondsLeft)}</span>}
-        {running && <button type="button" disabled={busy} onClick={submit} className="rounded-xl bg-[#B52A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#9e2424] disabled:opacity-50">Nộp bài</button>}
+        {running && <button type="button" disabled={busy} onClick={submit} className="rounded-xl bg-[#C8322B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A32620] disabled:opacity-50">Nộp bài</button>}
         {result && <button type="button" onClick={() => setPaper(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Về danh sách đề</button>}
       </div>
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
       {result && (
         <div className={`rounded-2xl p-6 text-center ${result.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
           <p className="text-4xl font-bold">{result.scorePercent}%</p>
+          <p className="mt-1 text-sm font-bold">Ước tính {result.estimatedScore}/{result.scale} điểm{result.targetScore != null ? (result.estimatedScore >= result.targetScore ? ` · đã đạt mục tiêu ${result.targetScore}` : ` · còn thiếu ${result.targetScore - result.estimatedScore} so với mục tiêu ${result.targetScore}`) : ''}</p>
           <p className="mt-1 text-sm font-semibold">{result.passed ? 'Đạt' : 'Chưa đạt'} · đúng {result.correct}/{result.total} câu · cần từ {paper.passPercent}%</p>
         </div>
       )}
@@ -157,7 +167,7 @@ export const ExamPage: React.FC = () => {
         const Icon = SECTION_ICONS[section.kind] ?? FileCheck
         return (
           <section key={section.kind} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <h2 className="flex items-center gap-2 font-bold text-slate-800"><Icon className="h-4 w-4 text-[#B52A2A]" />{section.title}</h2>
+            <h2 className="flex items-center gap-2 font-bold text-slate-800"><Icon className="h-4 w-4 text-[#C8322B]" />{section.title}</h2>
             {section.kind === 'TYPING' && <p className="mt-1 text-xs text-slate-500">Gõ pinyin không dấu rồi nhấn phím cách hoặc số để chọn chữ. Xóa lùi để sửa.</p>}
             <div className="mt-3 space-y-5">
               {section.passages.map((passage, index) => (

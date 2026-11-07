@@ -1,62 +1,76 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  GraduationCap,
-  Library,
-  Layers,
-  FileCheck,
-  LogOut,
-  User as UserIcon,
+  BookMarked,
   ChevronDown,
+  ExternalLink,
+  FileCheck,
+  Flame,
+  House,
+  Layers,
+  Library,
+  LogOut,
+  Map as MapIcon,
   Menu,
   X,
-  Flame,
-  Award,
-  Sparkles,
-  ExternalLink,
+  Lightbulb,
 } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout } from '@/app/slices/authSlice'
 import { authApi } from '@/api/authApi'
-import { getStudyStats, recordStudyActivity, type StudyStats } from '@/api/learningPathApi'
+import { getLearningPathOverview, getStudyStats, recordStudyActivity, type StudyStats } from '@/api/learningPathApi'
+import { GoalRing } from '@/components/learningpath/GoalRing'
+import { levelLabel } from '@/components/learningpath/GoalForm'
 
-const PRIMARY = '#B52A2A'
-
-interface NavMenuItem {
+interface NavItem {
   label: string
   path: string
   icon: React.ElementType
-  badge?: string
+  isActive: (pathname: string) => boolean
 }
 
-// ── Menu cấp 1 thông thường ─────────────────────────────────────
-const MAIN_NAV_ITEMS: NavMenuItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+const startsWith = (...prefixes: string[]) => (pathname: string) => prefixes.some((prefix) => pathname.startsWith(prefix))
+
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Trang chủ', path: '/dashboard', icon: House, isActive: (pathname) => pathname === '/dashboard' || pathname === '/' },
+  { label: 'Lộ trình', path: '/learning-path', icon: MapIcon, isActive: startsWith('/learning-path', '/placement', '/onboarding', '/practice') },
+  { label: 'Flashcard', path: '/flashcards', icon: Layers, isActive: startsWith('/flashcards') },
+  { label: 'Thi thử', path: '/exams', icon: FileCheck, isActive: startsWith('/exams') },
 ]
 
-const SECONDARY_NAV_ITEMS: NavMenuItem[] = [
-  { label: 'Flashcard', path: '/flashcards', icon: Layers, badge: 'SRS' },
-  { label: 'Thi thử', path: '/exams', icon: FileCheck },
-]
-
-// ── Các Menu con của nhóm Từ vựng ────────────────────────────────
 const VOCABULARY_SUB_ITEMS = [
   { label: 'Từ vựng mỗi ngày', path: '/vocabulary/daily' },
   { label: 'Tra cứu từ vựng', path: '/vocabulary/search' },
-  { label: 'Sổ tay từ vựng', path: '/vocabulary/notebook' },
   { label: 'Từ vựng theo chủ đề', path: '/vocabulary/topic' },
-  { label: 'Mẹo nhớ từ vựng', path: '/vocabulary/tips' },
 ]
+
+/** These pages take the whole screen, so nothing competes with the question being answered. */
+const FOCUS_PAGES = /^\/learning-path\/(lesson\/|level-test\/|mistakes\/review)/
+
+const navRow = (active: boolean) =>
+  `flex items-center gap-3 rounded-2xl border-2 px-3.5 py-2.5 text-[15px] font-bold transition-colors ${
+    active ? 'border-rose-200 bg-rose-50 text-brand' : 'border-transparent text-slate-600 hover:bg-slate-100'
+  }`
 
 export const UserLayout: React.FC = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const user = useAppSelector((state) => state.auth.user)
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const [studyStats, setStudyStats] = useState<StudyStats | null>(null)
+  const [pathLevel, setPathLevel] = useState<number | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isInsideVocab = location.pathname.startsWith('/vocabulary')
+  const [isVocabOpen, setIsVocabOpen] = useState(isInsideVocab)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const focused = FOCUS_PAGES.test(location.pathname)
 
   // Study time counts only while the page is visible and the learner has been active in the last two minutes.
   useEffect(() => {
+    if (!isAuthenticated) return
     const refresh = () => { getStudyStats().then(setStudyStats).catch(() => undefined) }
     refresh()
     let lastInput = Date.now()
@@ -72,46 +86,29 @@ export const UserLayout: React.FC = () => {
       window.clearInterval(timer)
       events.forEach((name) => window.removeEventListener(name, markActive))
     }
-  }, [])
-  const user = useAppSelector((state) => state.auth.user)
+  }, [isAuthenticated])
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-
-  // Trạng thái mở/đóng của các cụm điều hướng xổ xuống
-  const isInsideVocab = location.pathname.startsWith('/vocabulary')
-  const [isVocabOpen, setIsVocabOpen] = useState(true)
-  const isInsideCourses = location.pathname === '/courses' || location.pathname.startsWith('/learning-path') || location.pathname.startsWith('/placement') || location.pathname.startsWith('/onboarding') || location.pathname.startsWith('/practice')
-  const [isCoursesOpen, setIsCoursesOpen] = useState(true)
-
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Tự động mở Collapsible Menu khi người dùng đang ở nhánh /vocabulary
+  // The level can rise during a lesson, so it is read again after each page rather than kept from login.
   useEffect(() => {
-    if (isInsideVocab) {
-      setIsVocabOpen(true)
-    }
-  }, [location.pathname, isInsideVocab])
+    if (focused || !isAuthenticated) return
+    getLearningPathOverview().then((overview) => setPathLevel(overview.availableHskLevel)).catch(() => undefined)
+  }, [location.pathname, focused, isAuthenticated])
 
   useEffect(() => {
-    if (isInsideCourses) setIsCoursesOpen(true)
-  }, [location.pathname, isInsideCourses])
+    if (isInsideVocab) setIsVocabOpen(true)
+  }, [isInsideVocab])
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Đóng mobile menu khi chuyển route
   useEffect(() => {
     setIsMobileMenuOpen(false)
+    setIsDropdownOpen(false)
   }, [location.pathname])
 
   const handleLogout = async () => {
@@ -128,413 +125,156 @@ export const UserLayout: React.FC = () => {
     }
   }
 
-  // Tiêu đề trang động trên Header
   const getPageTitle = () => {
-    const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === location.pathname)
+    const { pathname } = location
+    const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === pathname)
     if (sub) return sub.label
-    if (location.pathname === '/vocabulary') return 'Kho Từ Vựng HSK'
-    if (location.pathname === '/learning-path/practice') return 'Luyện tập'
-    if (location.pathname.startsWith('/learning-path/level-test')) return 'Kiểm tra vượt cấp'
-    if (location.pathname.startsWith('/learning-path/lesson')) return 'Bài học'
-    if (location.pathname === '/learning-path') return 'Lộ trình của tôi'
-    if (location.pathname.startsWith('/onboarding')) return 'Khảo sát trình độ'
-    if (location.pathname.startsWith('/placement/result')) return 'Kết quả xếp trình độ'
-    if (location.pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
-    if (location.pathname === '/courses') {
+    if (pathname === '/tips') return 'Mẹo học'
+    if (pathname === '/vocabulary') return 'Kho từ vựng HSK'
+    if (pathname.startsWith('/vocabulary')) return 'Từ vựng'
+    if (pathname === '/learning-path/practice') return 'Luyện tập'
+    if (pathname === '/learning-path/mistakes') return 'Câu từng sai'
+    if (pathname.startsWith('/onboarding')) return 'Khảo sát trình độ'
+    if (pathname.startsWith('/placement/result')) return 'Kết quả xếp trình độ'
+    if (pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
+    if (pathname === '/courses') {
       const level = Number(new URLSearchParams(location.search).get('hskLevel') || 1)
       return `Giáo trình HSK ${level === 7 ? '7–9' : level}`
     }
-
-    const main = MAIN_NAV_ITEMS.find((item) => item.path === location.pathname)
-    if (main) return main.label
-
-    const sec = SECONDARY_NAV_ITEMS.find((item) => item.path === location.pathname)
-    if (sec) return sec.label
-
-    return 'Tổng quan'
+    return NAV_ITEMS.find((item) => item.isActive(pathname))?.label ?? 'Yibi'
   }
 
+  if (focused) {
+    return <div className="min-h-screen bg-background text-slate-800 animate-fade-in"><Outlet /></div>
+  }
+
+  const level = pathLevel ?? user?.hskLevel ?? 1
+  const goalPercent = studyStats?.goalPercent ?? 0
+
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans selection:bg-[#B52A2A]/10 selection:text-[#B52A2A]">
-      {/* ── Mobile Sidebar Overlay ────────────────────────────────────── */}
+    <div className="flex min-h-screen bg-background font-sans text-slate-800 selection:bg-rose-200">
       {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden transition-opacity"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* ── Sidebar (Left Navigation) ─────────────────────────────────── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col overflow-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Top: Logo (fixed) & Navigation (scrollable) */}
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* Logo Brand */}
-          <div className="h-16 shrink-0 px-6 flex items-center justify-between border-b border-slate-100">
-            <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                <span
-                  className="font-chinese text-white font-black text-lg leading-none"
-                  style={{ fontFamily: "'Noto Serif SC', serif" }}
-                >
-                  易
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-slate-800 select-none">
-                  Yi<span style={{ color: PRIMARY }}>bi</span>
-                </span>
-                <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 -mt-1">
-                  Học tiếng Trung AI
-                </span>
-              </div>
-            </Link>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden border-r-2 border-slate-200/70 bg-white transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex h-20 shrink-0 items-center justify-between px-5">
+          <Link to="/dashboard" className="group flex items-center gap-3">
+            <img src="/logo-yibi.png" alt="" width={48} height={48} className="h-12 w-12 shrink-0 transition-transform group-hover:-rotate-6" />
+            <span className="flex min-w-0 flex-col leading-none">
+              <span className="select-none text-2xl font-extrabold tracking-tight text-slate-900">Yi<span className="text-brand">bi</span></span>
+              <span className="mt-1 select-none whitespace-nowrap text-[11px] font-semibold text-slate-500">Học tiếng Trung cá nhân hóa</span>
+            </span>
+          </Link>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden" aria-label="Đóng menu">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-            {/* Mobile close button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 md:hidden"
-              aria-label="Đóng menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        <nav className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 pb-3 [scrollbar-width:thin]" aria-label="Điều hướng chính">
+          {NAV_ITEMS.map(({ label, path, icon: Icon, isActive }) => {
+            const active = isActive(location.pathname)
+            return (
+              <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={navRow(active)}>
+                <Icon className="h-5 w-5 shrink-0" />
+                {label}
+              </Link>
+            )
+          })}
 
-          {/* Navigation Items */}
-          <nav
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3.5 space-y-1.5 [scrollbar-width:thin]"
-            aria-label="Main Navigation"
-          >
-            {/* Nhóm 1: Menu học tập chính */}
-            <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 select-none">
-              TỔNG QUAN
-            </div>
-
-            {MAIN_NAV_ITEMS.map((item) => {
-              const Icon = item.icon
-              const isActive =
-                location.pathname === item.path ||
-                (item.path !== '/dashboard' && location.pathname.startsWith(item.path))
-
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                    isActive
-                      ? 'bg-rose-50 text-[#B52A2A] font-semibold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`w-4 h-4 transition-colors ${
-                        isActive ? 'text-[#B52A2A]' : 'text-slate-400'
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </div>
-                </NavLink>
-              )
-            })}
-
-            {/* Nhóm Khóa học: lộ trình cá nhân và giáo trình HSK 1–6 */}
-            <div className="pt-3">
-              <div className="px-3 pb-1.5 text-xs font-semibold text-slate-400 tracking-wide uppercase select-none">
-                HỌC TẬP & LỘ TRÌNH
-              </div>
-              <button
-                type="button"
-                aria-expanded={isCoursesOpen}
-                onClick={() => setIsCoursesOpen((prev) => !prev)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors select-none ${isInsideCourses ? 'bg-rose-50/50' : 'hover:bg-slate-50'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-4 h-4 text-[#B52A2A]" />
-                  </div>
-                  <span className="text-base font-medium text-[#B52A2A]">Khóa học</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-[#B52A2A] transition-transform duration-200 ${isCoursesOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isCoursesOpen && (
-                <div className="space-y-1 pl-4 pt-1.5 animate-fade-in">
-                  <Link
-                    to="/learning-path"
-                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname.startsWith('/learning-path') ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
-                  >
-                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname.startsWith('/learning-path') ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                    <span>Lộ trình của tôi</span>
-                  </Link>
-
-                  <Link
-                    to="/courses"
-                    className={`flex items-center rounded-xl px-3.5 py-2 text-sm transition-all duration-150 ${location.pathname === '/courses' ? 'bg-rose-50 font-medium text-[#B52A2A] shadow-xs' : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'}`}
-                  >
-                    <span className={`mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${location.pathname === '/courses' ? 'bg-[#B52A2A]' : 'bg-slate-300'}`} />
-                    <span>Thư viện giáo trình</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* ── Nhiệm vụ 1: Group Header & Menu Cha 'Từ vựng' ──────────── */}
-            <div className="pt-3">
-              <div className="px-3 pb-1.5 text-xs font-semibold text-slate-400 tracking-wide uppercase select-none">
-                TỪ VỰNG & NỀN TẢNG
-              </div>
-
-              {/* Menu cha 'Từ vựng' */}
-              <button
-                type="button"
-                onClick={() => setIsVocabOpen((prev) => !prev)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors select-none ${
-                  isInsideVocab
-                    ? 'bg-rose-50/50'
-                    : 'hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {/* Icon Library / BookOpen trong vòng tròn đỏ nhạt */}
-                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                    <Library className="w-4 h-4 text-[#B52A2A]" />
-                  </div>
-
-                  {/* Text màu đỏ chủ đạo #B52A2A */}
-                  <span className="text-base font-medium text-[#B52A2A]">
-                    Từ vựng
-                  </span>
-                </div>
-
-                {/* Chevron icon xoay khi mở/đóng */}
-                <ChevronDown
-                  className={`w-4 h-4 text-[#B52A2A] transition-transform duration-200 ${
-                    isVocabOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {/* ── Nhiệm vụ 2 & 3: Danh sách 5 Menu Con (Sub-items) ──────── */}
-              {isVocabOpen && (
-                <div className="space-y-1 pl-4 pt-1.5 animate-fade-in">
-                  {VOCABULARY_SUB_ITEMS.map((sub) => {
-                    // Kiểm tra active (hoặc nếu là /vocabulary mặc định thì active mục đầu tiên)
-                    const isActive =
-                      location.pathname === sub.path ||
-                      (sub.path === '/vocabulary/daily' && location.pathname === '/vocabulary')
-
-                    return (
-                      <NavLink
-                        key={sub.path}
-                        to={sub.path}
-                        className={`flex items-center px-3.5 py-2 text-sm transition-all duration-150 ${
-                          isActive
-                            ? 'bg-rose-50 text-[#B52A2A] font-medium rounded-xl shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 rounded-xl'
-                        }`}
-                      >
-                        {/* Bullet point tròn: đỏ khi Active, xám nhạt khi Inactive */}
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full mr-2.5 shrink-0 transition-colors ${
-                            isActive ? 'bg-[#B52A2A]' : 'bg-slate-300'
-                          }`}
-                        />
-                        <span>{sub.label}</span>
-                      </NavLink>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Nhóm 3: Menu phụ luyện tập & thi thử */}
-            <div className="pt-3">
-              <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 select-none">
-                Luyện tập & Đánh giá
-              </div>
-
-              {SECONDARY_NAV_ITEMS.map((item) => {
-                const Icon = item.icon
-                const isActive = location.pathname.startsWith(item.path)
-
+          <button type="button" aria-expanded={isVocabOpen} onClick={() => setIsVocabOpen((value) => !value)} className={`w-full justify-between ${navRow(isInsideVocab)}`}>
+            <span className="flex items-center gap-3"><BookMarked className="h-5 w-5 shrink-0" />Từ vựng</span>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isVocabOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {isVocabOpen && (
+            <div className="animate-fade-in ml-6 space-y-0.5 border-l-2 border-slate-100 pl-3">
+              {VOCABULARY_SUB_ITEMS.map((sub) => {
+                const active = location.pathname === sub.path || (sub.path === '/vocabulary/daily' && location.pathname === '/vocabulary')
                 return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                      isActive
-                        ? 'bg-rose-50 text-[#B52A2A] font-semibold shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-4 h-4 transition-colors ${
-                          isActive ? 'text-[#B52A2A]' : 'text-slate-400'
-                        }`}
-                      />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                          isActive
-                            ? 'bg-[#B52A2A] text-white'
-                            : 'bg-slate-100 text-slate-500'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </NavLink>
+                  <Link key={sub.path} to={sub.path} aria-current={active ? 'page' : undefined} className={`block rounded-xl px-3 py-2 text-sm transition-colors ${active ? 'bg-rose-50 font-bold text-brand' : 'font-medium text-slate-600 hover:bg-slate-100'}`}>
+                    {sub.label}
+                  </Link>
                 )
               })}
             </div>
-          </nav>
-        </div>
+          )}
 
-        {/* Bottom: User HSK Mini Card */}
-        <div className="shrink-0 p-4 border-t border-slate-100">
-          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-amber-500" />
-                Mục tiêu hôm nay
-              </span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                HSK {user?.hskLevel || 1}
-              </span>
-            </div>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{ width: `${studyStats?.goalPercent ?? 0}%`, backgroundColor: PRIMARY }}
-              />
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2 flex items-center justify-between">
-              <span>Đã đạt {studyStats?.goalPercent ?? 0}%</span>
-              <span className="font-medium text-slate-600">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút</span>
-            </p>
-          </div>
+          <Link to="/courses" aria-current={location.pathname === '/courses' ? 'page' : undefined} className={navRow(location.pathname === '/courses')}>
+            <Library className="h-5 w-5 shrink-0" />
+            Thư viện giáo trình
+          </Link>
+
+          <Link to="/tips" aria-current={location.pathname === '/tips' ? 'page' : undefined} className={navRow(location.pathname === '/tips')}>
+            <Lightbulb className="h-5 w-5 shrink-0" />
+            Mẹo học
+          </Link>
+        </nav>
+
+        <div className="shrink-0 p-3">
+          {!isAuthenticated ? (
+            <Link to="/login" className="block rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
+              <span className="block text-sm font-extrabold text-slate-800">Chưa đăng nhập</span>
+              <span className="block text-xs font-medium text-slate-500">Đăng nhập để lưu tiến độ học</span>
+            </Link>
+          ) : (
+          <Link to="/dashboard" className="flex items-center gap-3 rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
+            <GoalRing percent={goalPercent} size={52} stroke={6}>
+              <span className="text-[11px] font-extrabold tabular-nums text-slate-800">{goalPercent}%</span>
+            </GoalRing>
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold text-slate-800">Hôm nay</span>
+              <span className="block text-xs font-medium tabular-nums text-slate-500">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút · {levelLabel(level)}</span>
+            </span>
+          </Link>
+          )}
         </div>
       </aside>
 
-      {/* ── Main Container (Header + Content Area) ───────────────────── */}
-      <div className="flex-1 flex flex-col md:pl-64 min-w-0">
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Left: Mobile hamburger + Breadcrumb */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 md:hidden"
-              aria-label="Mở menu"
-            >
-              <Menu className="w-5 h-5" />
+      <div className="flex min-w-0 flex-1 flex-col md:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 md:hidden" aria-label="Mở menu">
+              <Menu className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-800 hidden sm:inline">
-                YiBi
-              </span>
-              <span className="text-slate-300 hidden sm:inline">/</span>
-              <h2 className="text-sm font-semibold text-slate-700">
-                {getPageTitle()}
-              </h2>
-            </div>
+            <h2 className="truncate text-sm font-bold text-slate-500">{getPageTitle()}</h2>
           </div>
 
-          {/* Right: Streak badge & User Profile Dropdown */}
-          <div className="flex items-center gap-3">
-            {/* Streak Counter */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200/60 text-orange-600 text-xs font-semibold">
-              <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-              <span>{studyStats?.streakDays ?? 0} ngày liên tiếp</span>
-            </div>
+          {!isAuthenticated ? (
+            <nav className="flex shrink-0 items-center gap-2" aria-label="Tài khoản">
+              <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100">Đăng nhập</Link>
+              <Link to="/register" className="btn-chunky btn-brand px-4 py-2 text-sm">Đăng ký</Link>
+            </nav>
+          ) : (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-sm font-extrabold tabular-nums text-orange-600" title={`${studyStats?.streakDays ?? 0} ngày học liên tiếp`} aria-label={`${studyStats?.streakDays ?? 0} ngày học liên tiếp`}>
+              <Flame className="h-5 w-5 fill-orange-500 text-orange-500" />
+              {studyStats?.streakDays ?? 0}
+            </span>
 
-            {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2.5 p-1.5 pl-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all text-left focus:outline-none"
-                aria-expanded={isDropdownOpen}
-              >
-                {/* Avatar */}
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shadow-xs"
-                  style={{ backgroundColor: PRIMARY }}
-                >
-                  {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
-                </div>
-
-                {/* Username */}
-                <div className="hidden md:flex flex-col text-left">
-                  <span className="text-xs font-semibold text-slate-800 leading-tight">
-                    {user?.username || 'Học viên'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 capitalize">
-                    {user?.role === 'ROLE_ADMIN' ? 'Quản trị viên' : 'Học viên'}
-                  </span>
-                </div>
-
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                    isDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
+              <button onClick={() => setIsDropdownOpen((value) => !value)} className="flex items-center gap-1.5 rounded-xl p-1 transition-colors hover:bg-slate-100 focus:outline-none" aria-expanded={isDropdownOpen} aria-label="Tài khoản">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-sm font-bold text-white">{user?.username ? user.username.charAt(0).toUpperCase() : 'U'}</span>
+                <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-lg border border-slate-100 py-1.5 z-50 animate-fade-in divide-y divide-slate-100">
-                  {/* User info snippet */}
+                <div className="animate-fade-in absolute right-0 z-50 mt-2 w-60 divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-lg">
                   <div className="px-4 py-2.5">
-                    <p className="text-xs font-semibold text-slate-800">
-                      {user?.username || 'Học viên'}
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                      {user?.email || 'user@yibi.vn'}
-                    </p>
-                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-[#B52A2A]">
-                      <Sparkles className="w-3 h-3" /> HSK {user?.hskLevel || 1} Standard
-                    </div>
+                    <p className="truncate text-sm font-bold text-slate-800">{user?.username || 'Học viên'}</p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500">{user?.email}</p>
+                    <span className="mt-2 inline-block rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-brand">{levelLabel(level)}</span>
                   </div>
-
-                  {/* Menu Options */}
                   <div className="py-1">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                    >
-                      <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                      Thông tin tài khoản
-                    </Link>
                     {user?.role === 'ROLE_ADMIN' && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-purple-600 hover:bg-purple-50 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Trang quản trị (Admin)
+                      <Link to="/admin" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-50">
+                        <ExternalLink className="h-4 w-4" />
+                        Trang quản trị
                       </Link>
                     )}
                   </div>
-
-                  {/* Logout Action */}
                   <div className="py-1">
-                    <button
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
+                    <button onClick={handleLogout} disabled={isLoggingOut} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50">
+                      <LogOut className="h-4 w-4" />
                       {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                     </button>
                   </div>
@@ -542,13 +282,26 @@ export const UserLayout: React.FC = () => {
               )}
             </div>
           </div>
+          )}
         </header>
 
-        {/* ── Main Content Area (<Outlet />) ─────────────────────────── */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-fade-in">
+        <main className="animate-fade-in mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-2 sm:px-6 md:pb-10 lg:px-8">
           <Outlet />
         </main>
       </div>
+
+      {/* The sidebar is off-screen on a phone, so the main places stay under the thumb. */}
+      <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-2 border-slate-200/70 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+        {[...NAV_ITEMS, { label: 'Từ vựng', path: '/vocabulary/daily', icon: BookMarked, isActive: startsWith('/vocabulary') }].map(({ label, path, icon: Icon, isActive }) => {
+          const active = isActive(location.pathname)
+          return (
+            <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${active ? 'text-brand' : 'text-slate-500'}`}>
+              <Icon className="h-6 w-6" />
+              {label}
+            </Link>
+          )
+        })}
+      </nav>
     </div>
   )
 }

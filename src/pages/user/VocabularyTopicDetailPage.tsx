@@ -13,7 +13,7 @@ import { getTopicBySlug, getVocabulariesByTopic } from '@/api/topicApi'
 import { VOCAB_TOPICS, type VocabTopic } from '@/data/vocabTopics'
 import type { Vocabulary } from '@/types/vocabulary'
 
-const PRIMARY = '#B52A2A'
+const PRIMARY = '#C8322B'
 const PAGE_SIZE = 30
 
 /* ═══════════════════════════════════════════════════
@@ -189,7 +189,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
             </p>
             <Button
               onClick={() => navigate('/vocabulary/topic')}
-              className="rounded-xl bg-[#B52A2A] hover:bg-[#9B2323] text-white"
+              className="rounded-xl bg-[#C8322B] hover:bg-[#9B2323] text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại danh sách chủ đề
@@ -206,7 +206,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
         {/* ── BACK NAVIGATION ── */}
         <Link
           to="/vocabulary/topic"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 hover:text-[#B52A2A] transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 hover:text-[#C8322B] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Quay lại danh sách chủ đề
@@ -223,7 +223,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
               </span>
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3 py-1 rounded-xl bg-red-100 text-[#B52A2A] text-xs font-bold">
+                  <span className="px-3 py-1 rounded-xl bg-red-100 text-[#C8322B] text-xs font-bold">
                     {hskFilter || topic.hskLevel}
                   </span>
                   <span className="text-xs font-semibold text-stone-500">
@@ -253,7 +253,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                   )
                 }
                 disabled={topic.wordCount === 0}
-                className="rounded-2xl font-semibold text-sm px-5 py-2.5 transition-all bg-[#B52A2A] hover:bg-[#9B2323] text-white shadow-sm"
+                className="rounded-2xl font-semibold text-sm px-5 py-2.5 transition-all bg-[#C8322B] hover:bg-[#9B2323] text-white shadow-sm"
               >
                 <GraduationCap className="w-4 h-4 mr-2" />
                 Học theo Flashcard
@@ -270,14 +270,14 @@ export const VocabularyTopicDetailPage: React.FC = () => {
         {/* ── VOCABULARY LIST ── */}
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-stone-700 flex items-center gap-2 px-1">
-            <BookOpen className="w-4 h-4 text-[#B52A2A]" />
+            <BookOpen className="w-4 h-4 text-[#C8322B]" />
             Danh sách từ vựng
           </h2>
 
           {/* Loading initial */}
           {isLoadingVocabs && vocabs.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 border border-stone-200/80 flex flex-col items-center justify-center gap-3 text-stone-500">
-              <Loader2 className="w-7 h-7 animate-spin text-[#B52A2A]" />
+              <Loader2 className="w-7 h-7 animate-spin text-[#C8322B]" />
               <span className="text-sm font-medium">
                 Đang nạp từ vựng của chủ đề...
               </span>
@@ -293,7 +293,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                 {vocabs.map((vocab, index) => (
                   <div
                     key={`${vocab.id}-${index}`}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 hover:border-[#B52A2A]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4"
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 hover:border-[#C8322B]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {/* Number badge */}
@@ -313,7 +313,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                             {vocab.hanzi.replace(/[0-9]+$/, '')}
                           </span>
                           {vocab.pinyin && (
-                            <span className="text-sm font-semibold text-[#B52A2A]">
+                            <span className="text-sm font-semibold text-[#C8322B]">
                               {vocab.pinyin}
                             </span>
                           )}
@@ -378,7 +378,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                     variant="outline"
                     onClick={handleLoadMore}
                     disabled={isLoadingVocabs}
-                    className="rounded-2xl border-stone-300 hover:border-[#B52A2A] hover:text-[#B52A2A] px-8 py-3 text-sm font-semibold"
+                    className="rounded-2xl border-stone-300 hover:border-[#C8322B] hover:text-[#C8322B] px-8 py-3 text-sm font-semibold"
                   >
                     {isLoadingVocabs ? (
                       <>

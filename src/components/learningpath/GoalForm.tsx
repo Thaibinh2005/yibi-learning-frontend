@@ -20,14 +20,22 @@ const todayIso = () => {
 }
 
 const fieldClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#B52A2A] focus:outline-none'
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#C8322B] focus:outline-none'
 
 /** Collects the goal, target and daily study time; used by the onboarding survey and the learning path page. */
 export const GoalForm: React.FC<{
   value: LearningGoalInput
   onChange: (value: LearningGoalInput) => void
 }> = ({ value, onChange }) => {
-  const set = (patch: Partial<LearningGoalInput>) => onChange({ ...value, ...patch })
+  // HSK 1-2 are out of 200, HSK 3 and above out of 300, HSKK out of 100; communication has no score.
+  const scaleOf = (goal: LearningGoalInput) => (goal.goalType === 'COMMUNICATION' ? 0 : goal.goalType === 'HSKK' ? 100 : goal.targetLevel <= 2 ? 200 : 300)
+  const set = (patch: Partial<LearningGoalInput>) => {
+    const next = { ...value, ...patch }
+    const top = scaleOf(next)
+    onChange({ ...next, targetScore: top === 0 || next.targetScore == null ? null : Math.min(next.targetScore, top) })
+  }
+  const scale = scaleOf(value)
+  const passMark = Math.round(scale * 0.6)
 
   return (
     <div className="space-y-4">
@@ -42,7 +50,7 @@ export const GoalForm: React.FC<{
               onClick={() => set({ goalType: goal.value })}
               className={`rounded-xl border p-3 text-left transition ${
                 value.goalType === goal.value
-                  ? 'border-[#B52A2A] bg-rose-50'
+                  ? 'border-[#C8322B] bg-rose-50'
                   : 'border-slate-200 hover:border-rose-200'
               }`}
             >
@@ -66,18 +74,23 @@ export const GoalForm: React.FC<{
             ))}
           </select>
         </label>
-        <label className="block text-sm font-semibold text-slate-700">
-          Điểm mục tiêu <span className="font-normal text-slate-400">(không bắt buộc)</span>
-          <input
-            type="number"
-            min={0}
-            max={300}
-            className={`${fieldClass} mt-1.5`}
-            value={value.targetScore ?? ''}
-            placeholder="VD: 180"
-            onChange={(event) => set({ targetScore: event.target.value === '' ? null : Number(event.target.value) })}
-          />
-        </label>
+        {scale > 0 ? (
+          <label className="block text-sm font-semibold text-slate-700">
+            Điểm mục tiêu <span className="font-normal text-slate-400">(thang {scale}, không bắt buộc)</span>
+            <input
+              type="number"
+              min={0}
+              max={scale}
+              className={`${fieldClass} mt-1.5`}
+              value={value.targetScore ?? ''}
+              placeholder={`Đạt từ ${passMark}`}
+              onChange={(event) => set({ targetScore: event.target.value === '' ? null : Math.min(Number(event.target.value), scale) })}
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">Mục tiêu cao sẽ nâng mức cần đạt của bài kiểm tra trên lộ trình, tối đa 95%.</span>
+          </label>
+        ) : (
+          <p className="self-center text-sm text-slate-500">Mục tiêu giao tiếp không dùng điểm số.</p>
+        )}
         <label className="block text-sm font-semibold text-slate-700">
           Ngày mục tiêu <span className="font-normal text-slate-400">(không bắt buộc)</span>
           <input
@@ -101,7 +114,7 @@ export const GoalForm: React.FC<{
               onClick={() => set({ dailyMinutes: minutes })}
               className={`rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
                 value.dailyMinutes === minutes
-                  ? 'border-[#B52A2A] bg-rose-50 text-[#B52A2A]'
+                  ? 'border-[#C8322B] bg-rose-50 text-[#C8322B]'
                   : 'border-slate-200 text-slate-600 hover:border-rose-200'
               }`}
             >

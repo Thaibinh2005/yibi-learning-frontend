@@ -174,7 +174,7 @@ export const TopicFlashcardPage: React.FC = () => {
         <div>
           <Link
             to={backTo}
-            className="mb-1.5 inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-[#B52A2A]"
+            className="mb-1.5 inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-[#C8322B]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Về chủ đề
@@ -186,7 +186,7 @@ export const TopicFlashcardPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold">
           <span className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">Đã thuộc {learned}</span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[#B52A2A]">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[#C8322B]">
             <Layers className="h-3.5 w-3.5" />
             Còn {queue.length} / {total}
           </span>
@@ -197,7 +197,7 @@ export const TopicFlashcardPage: React.FC = () => {
       {total > 0 && (
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
           <div
-            className="h-full rounded-full bg-[#B52A2A] transition-all duration-300"
+            className="h-full rounded-full bg-[#C8322B] transition-all duration-300"
             style={{ width: `${(learned / total) * 100}%` }}
           />
         </div>
@@ -242,7 +242,7 @@ export const TopicFlashcardPage: React.FC = () => {
             <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
             {revealed ? (
               <>
-                <p className="mt-5 text-xl font-semibold text-[#B52A2A]">{current.vocab.pinyin}</p>
+                <p className="mt-5 text-xl font-semibold text-[#C8322B]">{current.vocab.pinyin}</p>
                 <p className="mt-2 max-w-md text-sm leading-relaxed text-stone-700">
                   {current.vocab.meaningVi || 'Chưa có nghĩa tiếng Việt'}
                 </p>
@@ -274,7 +274,7 @@ export const TopicFlashcardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setRevealed(true)}
-              className="w-full rounded-xl bg-[#B52A2A] px-4 py-3 text-sm font-semibold text-white hover:bg-[#9B2323]"
+              className="w-full rounded-xl bg-[#C8322B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#9B2323]"
             >
               Lật thẻ
             </button>
@@ -291,7 +291,7 @@ export const TopicFlashcardPage: React.FC = () => {
         <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-10 text-center text-sm text-stone-500">
           Chủ đề này chưa có từ vựng{hskFilter ? ` ở cấp ${hskFilter}` : ''}.
           <div>
-            <Link to={backTo} className="mt-4 inline-block font-semibold text-[#B52A2A]">
+            <Link to={backTo} className="mt-4 inline-block font-semibold text-[#C8322B]">
               Về chủ đề
             </Link>
           </div>
@@ -324,7 +324,7 @@ export const TopicFlashcardPage: React.FC = () => {
             </button>
             <Link
               to="/flashcards"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#9B2323]"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#C8322B] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#9B2323]"
             >
               <Sparkles className="h-4 w-4" />
               Mở bộ Flashcard
