@@ -316,13 +316,13 @@ export const AdminDashboardPage: React.FC = () => {
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#B52A2A] to-rose-500 flex items-center justify-center text-white shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#C8322B] to-rose-500 flex items-center justify-center text-white shadow-xs">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-slate-800 text-base">Yibi CMS</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 text-[#B52A2A] border border-rose-100">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 text-[#C8322B] border border-rose-100">
                   Admin Control Panel
                 </span>
               </div>
@@ -356,7 +356,7 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={() => setActiveTab('generator')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'generator'
-                ? 'border-[#B52A2A] text-[#B52A2A]'
+                ? 'border-[#C8322B] text-[#C8322B]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -368,7 +368,7 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={() => setActiveTab('repository')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'repository'
-                ? 'border-[#B52A2A] text-[#B52A2A]'
+                ? 'border-[#C8322B] text-[#C8322B]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -385,7 +385,7 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={() => setActiveTab('coverage')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'coverage'
-                ? 'border-[#B52A2A] text-[#B52A2A]'
+                ? 'border-[#C8322B] text-[#C8322B]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -397,7 +397,7 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={() => setActiveTab('analytics')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'analytics'
-                ? 'border-[#B52A2A] text-[#B52A2A]'
+                ? 'border-[#C8322B] text-[#C8322B]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -441,7 +441,7 @@ export const AdminDashboardPage: React.FC = () => {
                   onClick={() => setGenSource(id)}
                   aria-pressed={genSource === id}
                   className={`cursor-pointer rounded-lg px-4 py-1.5 text-xs font-bold transition-all ${
-                    genSource === id ? 'bg-white text-[#B52A2A] shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                    genSource === id ? 'bg-white text-[#C8322B] shadow-xs' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   {label}
@@ -467,7 +467,7 @@ export const AdminDashboardPage: React.FC = () => {
                         onClick={() => setGenParams({ ...genParams, levelCode: lvl })}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           genParams.levelCode === lvl
-                            ? 'bg-[#B52A2A] text-white shadow-xs scale-105'
+                            ? 'bg-[#C8322B] text-white shadow-xs scale-105'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
@@ -491,7 +491,7 @@ export const AdminDashboardPage: React.FC = () => {
                           onClick={() => setGenParams({ ...genParams, questionType: t.id })}
                           className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                             isSelected
-                              ? 'border-[#B52A2A] bg-rose-50/50 ring-1 ring-[#B52A2A]'
+                              ? 'border-[#C8322B] bg-rose-50/50 ring-1 ring-[#C8322B]'
                               : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                           }`}
                         >
@@ -552,7 +552,7 @@ export const AdminDashboardPage: React.FC = () => {
                           value="dry-run"
                           checked={genParams.mode === 'dry-run'}
                           onChange={() => setGenParams({ ...genParams, mode: 'dry-run' })}
-                          className="accent-[#B52A2A]"
+                          className="accent-[#C8322B]"
                         />
                         <div>
                           <span className="text-xs font-bold text-slate-800 block">Dry-run (Xem trước)</span>
@@ -567,7 +567,7 @@ export const AdminDashboardPage: React.FC = () => {
                           value="import"
                           checked={genParams.mode === 'import'}
                           onChange={() => setGenParams({ ...genParams, mode: 'import' })}
-                          className="accent-[#B52A2A]"
+                          className="accent-[#C8322B]"
                         />
                         <div>
                           <span className="text-xs font-bold text-rose-700 block">Import (Lưu vào DB)</span>
@@ -585,7 +585,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isGenerating}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#B52A2A] text-white text-sm font-bold shadow-xs hover:bg-red-800 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#C8322B] text-white text-sm font-bold shadow-xs hover:bg-red-800 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {isGenerating ? (
                       <>
@@ -670,7 +670,7 @@ export const AdminDashboardPage: React.FC = () => {
                         {/* Header của câu hỏi */}
                         <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#B52A2A]">Q{idx + 1}</span>
+                            <span className="text-xs font-bold text-[#C8322B]">Q{idx + 1}</span>
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                               HSK {q.levelCode}
                             </span>
@@ -802,9 +802,9 @@ export const AdminDashboardPage: React.FC = () => {
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
                   <div className="flex items-center justify-between text-rose-600 text-xs mb-1">
                     <span>Âm thanh chuẩn MinIO</span>
-                    <Volume2 className="w-4 h-4 text-[#B52A2A]" />
+                    <Volume2 className="w-4 h-4 text-[#C8322B]" />
                   </div>
-                  <div className="text-2xl font-bold text-[#B52A2A]">{stats.withAudioCount}</div>
+                  <div className="text-2xl font-bold text-[#C8322B]">{stats.withAudioCount}</div>
                   <span className="text-[10px] text-slate-400">
                     Độ phủ: {Math.round((stats.withAudioCount / (stats.totalQuestions || 1)) * 100)}%
                   </span>
@@ -823,7 +823,7 @@ export const AdminDashboardPage: React.FC = () => {
                     placeholder="Tìm theo chữ Hán, pinyin, đáp án, mã câu..."
                     value={repoParams.search || ''}
                     onChange={(e) => setRepoParams({ ...repoParams, search: e.target.value, page: 0 })}
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#B52A2A]"
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#C8322B]"
                   />
                 </div>
 
@@ -892,7 +892,7 @@ export const AdminDashboardPage: React.FC = () => {
             {/* Danh sách câu hỏi */}
             {isLoadingRepo ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#B52A2A]" />
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#C8322B]" />
                 <p className="text-xs">Đang tải câu hỏi từ ngân hàng...</p>
               </div>
             ) : repoError ? (
@@ -918,7 +918,7 @@ export const AdminDashboardPage: React.FC = () => {
                         {/* Header card */}
                         <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100 text-xs">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-[#B52A2A]">#{q.id}</span>
+                            <span className="font-bold text-[#C8322B]">#{q.id}</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                               HSK {q.levelCode}
                             </span>
@@ -1134,7 +1134,7 @@ export const AdminDashboardPage: React.FC = () => {
                           <td className="py-3.5 px-4 text-slate-600">50 câu</td>
                           <td className="py-3.5 px-4 text-slate-600">50 câu</td>
                           <td className="py-3.5 px-4 text-slate-600">50 câu</td>
-                          <td className="py-3.5 px-4 font-bold text-[#B52A2A]">{count} câu</td>
+                          <td className="py-3.5 px-4 font-bold text-[#C8322B]">{count} câu</td>
                           <td className="py-3.5 px-4">
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                               <CheckCircle2 className="w-3.5 h-3.5" /> 100% Đạt chuẩn & Đã có Audio
@@ -1150,7 +1150,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <td className="py-3.5 px-4">350 câu</td>
                       <td className="py-3.5 px-4">350 câu</td>
                       <td className="py-3.5 px-4">350 câu</td>
-                      <td className="py-3.5 px-4 text-[#B52A2A] text-sm font-extrabold">
+                      <td className="py-3.5 px-4 text-[#C8322B] text-sm font-extrabold">
                         {stats.totalQuestions} câu
                       </td>
                       <td className="py-3.5 px-4 text-emerald-700">100% PUBLISHED</td>
@@ -1172,7 +1172,7 @@ export const AdminDashboardPage: React.FC = () => {
             {/* Header Modal */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-[#B52A2A]" />
+                <Edit3 className="w-5 h-5 text-[#C8322B]" />
                 <h3 className="font-bold text-slate-800 text-sm">
                   Chỉnh sửa câu hỏi #{editingQuestion.id} ({editingQuestion.questionType})
                 </h3>
@@ -1204,7 +1204,7 @@ export const AdminDashboardPage: React.FC = () => {
                   required
                   value={editForm.prompt}
                   onChange={(e) => setEditForm({ ...editForm, prompt: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#B52A2A] font-chinese font-semibold"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#C8322B] font-chinese font-semibold"
                 />
               </div>
 
@@ -1218,7 +1218,7 @@ export const AdminDashboardPage: React.FC = () => {
                     type="text"
                     value={editForm.promptPinyin || ''}
                     onChange={(e) => setEditForm({ ...editForm, promptPinyin: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#B52A2A] font-mono"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#C8322B] font-mono"
                   />
                 </div>
 
@@ -1287,7 +1287,7 @@ export const AdminDashboardPage: React.FC = () => {
                   rows={2}
                   value={editForm.explanation || ''}
                   onChange={(e) => setEditForm({ ...editForm, explanation: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#B52A2A]"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#C8322B]"
                 />
               </div>
 
@@ -1304,7 +1304,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSavingEdit}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#B52A2A] text-white text-xs font-bold hover:bg-red-800 transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#C8322B] text-white text-xs font-bold hover:bg-red-800 transition disabled:opacity-50 cursor-pointer"
                 >
                   {isSavingEdit ? (
                     <>

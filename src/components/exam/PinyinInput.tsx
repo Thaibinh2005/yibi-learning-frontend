@@ -65,7 +65,7 @@ export const PinyinInput: React.FC<{
 
   return (
     <div>
-      <div className="flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 focus-within:border-[#B52A2A]">
+      <div className="flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 focus-within:border-[#C8322B]">
         {value && <span className="font-chinese text-lg font-semibold text-slate-800">{value}</span>}
         <input
           aria-label={label}
@@ -76,7 +76,7 @@ export const PinyinInput: React.FC<{
           autoComplete="off"
           spellCheck={false}
           placeholder={value ? '' : 'Gõ pinyin, ví dụ: nihao'}
-          className="min-w-0 flex-1 bg-transparent text-sm text-[#B52A2A] outline-none placeholder:text-slate-300"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#C8322B] outline-none placeholder:text-slate-300"
         />
       </div>
       {candidates.length > 0 && (

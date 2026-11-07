@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
@@ -15,6 +17,9 @@ export default {
     },
     extend: {
       colors: {
+        // Warm greys on a paper background; every existing slate class follows.
+        slate: colors.stone,
+        brand: { DEFAULT: "#C8322B", dark: "#A32620", edge: "#8C1F1A" },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -49,14 +54,18 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      boxShadow: {
+        xs: "0 1px 2px rgba(41, 37, 36, 0.05)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        chinese: ["Noto Serif SC", "PingFang SC", "Microsoft YaHei", "sans-serif"],
+        sans: ["Be Vietnam Pro", "system-ui", "sans-serif"],
+        // Vietnamese and pinyin in the text face; only Chinese falls through to the serif.
+        chinese: ["Be Vietnam Pro", "Noto Serif SC", "PingFang SC", "Microsoft YaHei", "sans-serif"],
       },
     },
   },

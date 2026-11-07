@@ -12,13 +12,16 @@ interface VoiceRecorderProps {
   onSubmit: (audio: Blob) => Promise<void>
   onSkip: () => void
   maxSeconds?: number
+  /** Says what happens to the recording; placement answers are not kept, lesson ones are. */
+  note?: string
 }
 
 const format = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
-export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30 }: VoiceRecorderProps) {
+export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30, note = 'Bản ghi không được lưu sau khi chấm.' }: VoiceRecorderProps) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [seconds, setSeconds] = useState(0)
+  const [preview, setPreview] = useState<string | null>(null)
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const chunks = useRef<Blob[]>([])
@@ -32,6 +35,10 @@ export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30 }: VoiceRecord
   }
 
   useEffect(() => release, [])
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview)
+  }, [preview])
 
   const stop = () => {
     if (recorder.current && recorder.current.state !== 'inactive') recorder.current.stop()
@@ -55,6 +62,7 @@ export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30 }: VoiceRecord
     media.onstop = () => {
       release()
       blob.current = new Blob(chunks.current, { type: media.mimeType || 'audio/webm' })
+      setPreview(URL.createObjectURL(blob.current))
       setPhase('recorded')
     }
     media.start()
@@ -108,7 +116,8 @@ export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30 }: VoiceRecord
                 </>
               ) : recorded ? (
                 <span className="text-sm text-slate-600">
-                  Đã ghi {format(seconds)}. Nhấn micro để ghi lại, hoặc gửi bản ghi.
+                  Đã ghi {format(seconds)}. Nghe lại nếu muốn, nhấn micro để ghi lại, hoặc gửi bản ghi.
+                  {preview && <audio controls src={preview} className="mx-auto mt-2 h-10 w-full max-w-xs" aria-label="Nghe lại bản ghi vừa thu" />}
                 </span>
               ) : (
                 <>
@@ -148,7 +157,7 @@ export function VoiceRecorder({ onSubmit, onSkip, maxSeconds = 30 }: VoiceRecord
             </Button>
           )}
           {(phase === 'idle' || phase === 'recording') && (
-            <span className="text-xs text-slate-500">Bản ghi không được lưu sau khi chấm.</span>
+            <span className="text-xs text-slate-500">{note}</span>
           )}
         </div>
       </div>

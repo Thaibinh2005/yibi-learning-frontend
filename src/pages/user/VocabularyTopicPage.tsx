@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getTopics } from '@/api/topicApi'
 import { VOCAB_TOPICS, type VocabTopic } from '@/data/vocabTopics'
 
-const PRIMARY = '#B52A2A'
+const PRIMARY = '#C8322B'
 
 const HSK_LEVELS = [
   'Tất cả',
@@ -137,7 +137,7 @@ export const VocabularyTopicPage: React.FC = () => {
           <div className="absolute top-0 right-0 w-80 h-80 bg-red-50 rounded-full blur-3xl -z-0 opacity-60 pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#B52A2A] text-xs font-semibold tracking-wide">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#C8322B] text-xs font-semibold tracking-wide">
                 <Sparkles className="w-3.5 h-3.5" />
                 Chủ đề từ vựng HSK 3.0
               </div>
@@ -153,7 +153,7 @@ export const VocabularyTopicPage: React.FC = () => {
             {/* Quick stats pills */}
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
               <div className="px-4 py-3 bg-stone-50 rounded-2xl border border-stone-200/60 text-center min-w-[100px]">
-                <div className="text-xl font-bold text-[#B52A2A]">178</div>
+                <div className="text-xl font-bold text-[#C8322B]">178</div>
                 <div className="text-xs text-stone-500 font-medium">Chủ đề</div>
               </div>
               <div className="px-4 py-3 bg-stone-50 rounded-2xl border border-stone-200/60 text-center min-w-[100px]">
@@ -180,7 +180,7 @@ export const VocabularyTopicPage: React.FC = () => {
                 placeholder="Tìm kiếm chủ đề (ví dụ: ẩm thực, du lịch, công việc...)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 pr-10 py-3 rounded-2xl border-stone-200 focus:border-[#B52A2A] focus:ring-[#B52A2A] text-sm bg-stone-50/50 hover:bg-white transition-colors"
+                className="pl-11 pr-10 py-3 rounded-2xl border-stone-200 focus:border-[#C8322B] focus:ring-[#C8322B] text-sm bg-stone-50/50 hover:bg-white transition-colors"
               />
               {searchQuery && (
                 <button
@@ -200,7 +200,7 @@ export const VocabularyTopicPage: React.FC = () => {
                 onClick={() => setSortOption('count')}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   sortOption === 'count'
-                    ? 'bg-white text-[#B52A2A] shadow-sm'
+                    ? 'bg-white text-[#C8322B] shadow-sm'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -212,7 +212,7 @@ export const VocabularyTopicPage: React.FC = () => {
                 onClick={() => setSortOption('az')}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   sortOption === 'az'
-                    ? 'bg-white text-[#B52A2A] shadow-sm'
+                    ? 'bg-white text-[#C8322B] shadow-sm'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -230,7 +230,7 @@ export const VocabularyTopicPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="inline-flex items-center gap-1 text-[#B52A2A] hover:underline font-semibold"
+                  className="inline-flex items-center gap-1 text-[#C8322B] hover:underline font-semibold"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Đặt lại bộ lọc
@@ -248,7 +248,7 @@ export const VocabularyTopicPage: React.FC = () => {
                     onClick={() => setSelectedHsk(level)}
                     className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 ${
                       isActive
-                        ? 'bg-[#B52A2A] text-white shadow-sm ring-2 ring-[#B52A2A]/20'
+                        ? 'bg-[#C8322B] text-white shadow-sm ring-2 ring-[#C8322B]/20'
                         : 'bg-stone-100/80 text-stone-700 hover:bg-stone-200/70'
                     }`}
                   >
@@ -264,7 +264,7 @@ export const VocabularyTopicPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-sm sm:text-base font-bold text-stone-800 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#B52A2A]" />
+              <Layers className="w-4 h-4 text-[#C8322B]" />
               Danh sách chủ đề ({topics.length})
             </h2>
             <span className="text-xs text-stone-500">
@@ -310,7 +310,7 @@ export const VocabularyTopicPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleResetFilters}
-                className="rounded-xl border-stone-300 hover:border-[#B52A2A] hover:text-[#B52A2A]"
+                className="rounded-xl border-stone-300 hover:border-[#C8322B] hover:text-[#C8322B]"
               >
                 Xóa bộ lọc
               </Button>
@@ -321,17 +321,17 @@ export const VocabularyTopicPage: React.FC = () => {
                 <div
                   key={topic.id || topic.slug}
                   onClick={() => handleOpenTopic(topic)}
-                  className="group bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 hover:border-[#B52A2A]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                  className="group bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 hover:border-[#C8322B]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-3.5">
                     {/* Header: Icon, Titles, Badges */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3.5">
-                        <span className="text-3xl sm:text-4xl p-2.5 bg-stone-50 group-hover:bg-red-50/60 rounded-2xl border border-stone-200/50 group-hover:border-[#B52A2A]/20 transition-colors">
+                        <span className="text-3xl sm:text-4xl p-2.5 bg-stone-50 group-hover:bg-red-50/60 rounded-2xl border border-stone-200/50 group-hover:border-[#C8322B]/20 transition-colors">
                           {topic.icon || '📖'}
                         </span>
                         <div>
-                          <h3 className="font-bold text-base sm:text-lg text-stone-900 group-hover:text-[#B52A2A] transition-colors leading-snug">
+                          <h3 className="font-bold text-base sm:text-lg text-stone-900 group-hover:text-[#C8322B] transition-colors leading-snug">
                             {topic.titleVi}
                           </h3>
                           <p className="text-xs sm:text-sm font-medium text-stone-500">
@@ -341,7 +341,7 @@ export const VocabularyTopicPage: React.FC = () => {
                       </div>
 
                       {/* HSK Badge */}
-                      <span className="px-2.5 py-1 rounded-xl bg-stone-100 text-stone-700 text-xs font-semibold whitespace-nowrap group-hover:bg-red-100 group-hover:text-[#B52A2A] transition-colors">
+                      <span className="px-2.5 py-1 rounded-xl bg-stone-100 text-stone-700 text-xs font-semibold whitespace-nowrap group-hover:bg-red-100 group-hover:text-[#C8322B] transition-colors">
                         {selectedHsk === 'Tất cả' ? topic.hskLevel : selectedHsk}
                       </span>
                     </div>
@@ -387,7 +387,7 @@ export const VocabularyTopicPage: React.FC = () => {
                       </strong>{' '}
                       từ vựng
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[#B52A2A] font-semibold group-hover:translate-x-0.5 transition-transform">
+                    <span className="inline-flex items-center gap-1 text-[#C8322B] font-semibold group-hover:translate-x-0.5 transition-transform">
                       Khám phá
                       <ChevronRight className="w-3.5 h-3.5" />
                     </span>
