@@ -79,7 +79,7 @@ export const ExampleSentence: React.FC<{
         {parts.map((part, i) => (
           <React.Fragment key={i}>
             {part}
-            {i < parts.length - 1 && <span className="font-bold text-[#B52A2A]">{word}</span>}
+            {i < parts.length - 1 && <span className="font-bold text-[#C8322B]">{word}</span>}
           </React.Fragment>
         ))}
       </p>

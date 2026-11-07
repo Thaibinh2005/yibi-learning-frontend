@@ -54,6 +54,7 @@ const IconSpinner = () => (
   </svg>
 )
 
+
 // ── Google "G" logo (official brand colors) ───────────────────
 const IconGoogle = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -64,14 +65,23 @@ const IconGoogle = () => (
   </svg>
 )
 
+const GOOGLE_ERRORS: Record<string, string> = {
+  not_configured: 'Đăng nhập bằng Google chưa được cấu hình. Hãy dùng tài khoản Yibi hoặc liên hệ quản trị viên.',
+  cancelled: 'Bạn đã hủy đăng nhập bằng Google.',
+  expired: 'Phiên đăng nhập Google đã hết hạn. Hãy thử lại.',
+  unverified: 'Email Google này chưa được xác minh nên chưa dùng để đăng nhập được.',
+  disabled: 'Tài khoản này đã bị khóa.',
+  failed: 'Chưa đăng nhập được bằng Google. Hãy thử lại.',
+}
+
 export const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
 
-  const from =
-    (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard'
+  const origin = (location.state as { from?: { pathname: string; search?: string } })?.from
+  const from = origin ? `${origin.pathname}${origin.search ?? ''}` : '/dashboard'
 
   useEffect(() => {
     if (isAuthenticated) navigate(from, { replace: true })
@@ -80,14 +90,9 @@ export const LoginPage: React.FC = () => {
   const [form, setForm] = useState<LoginRequest>({ usernameOrEmail: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const googleError = new URLSearchParams(location.search).get('googleError')
+  const [error, setError] = useState<string | null>(googleError ? GOOGLE_ERRORS[googleError] ?? GOOGLE_ERRORS.failed : null)
   const [focusedField, setFocusedField] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -140,23 +145,13 @@ export const LoginPage: React.FC = () => {
 
         {/* ── Logo ─────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-3 mb-8">
-          {/* Icon badge */}
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            <span
-              className="font-chinese text-white font-black text-2xl leading-none"
-              style={{ fontFamily: "'Noto Serif SC', serif" }}
-            >
-              易
-            </span>
-          </div>
+          <img src="/logo-yibi.png" alt="Yibi" width={72} height={72} className="h-[72px] w-[72px]" />
 
           {/* Wordmark */}
           <span className="text-2xl font-bold tracking-tight text-slate-800 select-none">
             Yi<span style={{ color: PRIMARY }}>bi</span>
           </span>
+          <span className="-mt-2 text-xs font-semibold text-slate-500 select-none">Học tiếng Trung cá nhân hóa</span>
 
           {/* Divider */}
           <div className="w-8 h-[2px] rounded-full mt-1" style={{ backgroundColor: PRIMARY, opacity: 0.25 }} />
@@ -257,14 +252,8 @@ export const LoginPage: React.FC = () => {
                 {showPassword ? <IconEyeOff /> : <IconEye />}
               </button>
             </div>
-            {/* Quên mật khẩu — dưới input, căn phải */}
             <div className="flex justify-end pt-0.5">
-              <Link
-                to="/forgot-password"
-                className="text-xs font-medium transition-colors hover:opacity-75"
-                style={{ color: PRIMARY }}
-                tabIndex={-1}
-              >
+              <Link to="/forgot-password" className="text-xs font-medium transition-colors hover:opacity-75" style={{ color: PRIMARY }}>
                 Quên mật khẩu?
               </Link>
             </div>
@@ -290,7 +279,7 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        {/* ── Divider ──────────────────────────────────────────── */}
+        {/* ── Divider ─────────────────────────────────────────── */}
         <div className="relative my-5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-slate-100" />
@@ -300,16 +289,15 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Google sign-in button ────────────────────────────── */}
-        <button
+        {/* A full page visit: the sign-in continues on Google's site and returns through the backend. */}
+        <a
           id="login-google-btn"
-          type="button"
-          onClick={() => showToast('Tính năng đang được phát triển')}
-          className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-600 transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98]"
+          href={`/api/auth/google/start?returnTo=${encodeURIComponent(from)}`}
+          className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
         >
           <IconGoogle />
           Đăng nhập với Google
-        </button>
+        </a>
 
         {/* ── Register separator ───────────────────────────────── */}
         <div className="relative my-5">
@@ -323,6 +311,7 @@ export const LoginPage: React.FC = () => {
           Chưa có tài khoản?{' '}
           <Link
             to="/register"
+            state={{ from: origin }}
             className="font-semibold transition-colors hover:opacity-80"
             style={{ color: PRIMARY }}
           >
@@ -336,24 +325,6 @@ export const LoginPage: React.FC = () => {
         © {new Date().getFullYear()} Yibi · Nền tảng học tiếng Trung thông minh
       </p>
 
-      {/* ── Toast notification ───────────────────────────────── */}
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-fade-up"
-          role="alert"
-          aria-live="polite"
-        >
-          <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm text-white shadow-lg">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 shrink-0">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" x2="12" y1="8" y2="12" />
-              <line x1="12" x2="12.01" y1="16" y2="16" />
-            </svg>
-            {toast}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

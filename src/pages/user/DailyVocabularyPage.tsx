@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Volume2,
-  Star,
   Clock,
   Search,
   BookOpen,
@@ -25,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { DailyVocabulary } from '@/types/vocabulary'
 import { VOCAB_TOPICS } from '@/data/vocabTopics'
 
-const PRIMARY = '#B52A2A'
+const PRIMARY = '#C8322B'
 
 const HSK_LEVELS = [
   'Tất cả',
@@ -106,15 +105,6 @@ export const DailyVocabularyPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isShuffling, setIsShuffling] = useState<boolean>(false)
 
-  // Sổ tay từ vựng lưu trữ trong localStorage
-  const [savedIds, setSavedIds] = useState<Set<number>>(() => {
-    try {
-      const stored = localStorage.getItem('yibi_saved_vocab_ids')
-      return stored ? new Set(JSON.parse(stored)) : new Set()
-    } catch {
-      return new Set()
-    }
-  })
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Countdown clock to 00:00 midnight ICT
@@ -197,27 +187,6 @@ export const DailyVocabularyPage: React.FC = () => {
     }
   }
 
-  // Toggle lưu vào sổ tay
-  const handleToggleSave = (id: number) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      const isCurrentlySaved = next.has(id)
-      if (isCurrentlySaved) {
-        next.delete(id)
-        showToast('Đã xóa khỏi sổ tay từ vựng')
-      } else {
-        next.add(id)
-        showToast('Đã lưu vào sổ tay từ vựng!')
-      }
-      try {
-        localStorage.setItem('yibi_saved_vocab_ids', JSON.stringify(Array.from(next)))
-      } catch {
-        // Ignore localStorage error
-      }
-      return next
-    })
-  }
-
   const showToast = (msg: string) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 2500)
@@ -248,7 +217,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#B52A2A] text-xs font-semibold tracking-wide">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#C8322B] text-xs font-semibold tracking-wide">
               <Sparkles className="w-3.5 h-3.5" />
               Realtime HSK 3.0 Daily Vocabulary
             </div>
@@ -257,13 +226,13 @@ export const DailyVocabularyPage: React.FC = () => {
             </h1>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl leading-relaxed">
               Mỗi ngày một từ vựng chọn lọc từ kho cơ sở dữ liệu HSK 3.0, tự động cập nhật
-              lúc 00:00 (giờ Việt Nam). Nghe phát âm chuẩn, ghi nhớ nghĩa và lưu vào sổ tay.
+              lúc 00:00 (giờ Việt Nam). Nghe phát âm chuẩn và ghi nhớ nghĩa.
             </p>
           </div>
 
           {/* Quick Realtime Countdown Widget */}
           <div className="flex items-center gap-4 bg-stone-50 border border-stone-200/70 p-4 rounded-2xl">
-            <div className="w-10 h-10 rounded-xl bg-white border border-stone-200/60 flex items-center justify-center text-[#B52A2A] shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-white border border-stone-200/60 flex items-center justify-center text-[#C8322B] shadow-xs">
               <Clock className="w-5 h-5" />
             </div>
             <div>
@@ -281,7 +250,7 @@ export const DailyVocabularyPage: React.FC = () => {
         <div className="mt-6 pt-5 border-t border-stone-100 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-stone-500 mr-1 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-[#B52A2A]" />
+              <Layers className="w-3.5 h-3.5 text-[#C8322B]" />
               Cấp độ:
             </span>
             {HSK_LEVELS.map((level) => {
@@ -293,7 +262,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   onClick={() => setSelectedHsk(level)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                     isActive
-                      ? 'bg-[#B52A2A] text-white shadow-sm ring-2 ring-[#B52A2A]/20'
+                      ? 'bg-[#C8322B] text-white shadow-sm ring-2 ring-[#C8322B]/20'
                       : 'bg-stone-100/80 text-stone-600 hover:bg-stone-200/70'
                   }`}
                 >
@@ -308,7 +277,7 @@ export const DailyVocabularyPage: React.FC = () => {
             size="sm"
             onClick={handleRandomWord}
             disabled={isShuffling || isLoading}
-            className="rounded-xl border-stone-200 hover:border-[#B52A2A] hover:text-[#B52A2A] text-xs font-semibold h-9 px-4 gap-1.5"
+            className="rounded-xl border-stone-200 hover:border-[#C8322B] hover:text-[#C8322B] text-xs font-semibold h-9 px-4 gap-1.5"
           >
             {isShuffling ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -347,7 +316,7 @@ export const DailyVocabularyPage: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => setSelectedHsk('Tất cả')}
-                className="rounded-xl bg-[#B52A2A] text-white"
+                className="rounded-xl bg-[#C8322B] text-white"
               >
                 Xem tất cả cấp độ
               </Button>
@@ -357,7 +326,7 @@ export const DailyVocabularyPage: React.FC = () => {
               {/* Header card: Cấp độ HSK, từ loại, nhãn thời gian */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-100">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold px-3 py-1 rounded-xl bg-red-50 text-[#B52A2A] border border-red-100">
+                  <span className="text-xs font-bold px-3 py-1 rounded-xl bg-red-50 text-[#C8322B] border border-red-100">
                     HSK {selectedWord.levelCode || selectedWord.hskLevel}
                   </span>
                   <span className="text-xs font-semibold px-3 py-1 rounded-xl bg-stone-100 text-stone-700">
@@ -376,7 +345,7 @@ export const DailyVocabularyPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chữ Hán lớn, Pinyin, Phát âm & Lưu sổ tay */}
+              {/* Chữ Hán lớn, Pinyin, Phát âm */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-2">
                 <div>
                   {/* Chữ Hán siêu lớn */}
@@ -388,40 +357,17 @@ export const DailyVocabularyPage: React.FC = () => {
                   </div>
 
                   {/* Phiên âm Pinyin */}
-                  <div className="text-2xl font-semibold text-[#B52A2A] mt-2 tracking-wide font-mono">
+                  <div className="text-2xl font-semibold text-[#C8322B] mt-2 tracking-wide font-mono">
                     {selectedWord.pinyin}
                   </div>
 
-                  {/* Nút bấm nghe phát âm & Lưu sổ tay */}
+                  {/* Nút bấm nghe phát âm */}
                   <div className="flex items-center gap-3 mt-4">
                     <AudioButton
                       audioUrl={selectedWord.audioUrl}
                       text={selectedWord.hanzi}
                       size="lg"
                     />
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSave(selectedWord.id)}
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 border ${
-                        savedIds.has(selectedWord.id)
-                          ? 'bg-amber-50 text-amber-600 border-amber-200'
-                          : 'bg-stone-50 text-stone-600 hover:bg-stone-100 border-stone-200/70'
-                      }`}
-                      title={
-                        savedIds.has(selectedWord.id)
-                          ? 'Đã lưu vào sổ tay'
-                          : 'Lưu vào sổ tay từ vựng'
-                      }
-                    >
-                      <Star
-                        className={`w-5 h-5 ${
-                          savedIds.has(selectedWord.id)
-                            ? 'fill-amber-500 text-amber-500'
-                            : ''
-                        }`}
-                      />
-                    </button>
                   </div>
                 </div>
 
@@ -439,7 +385,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     </div>
                     <div>
                       Cấp độ chuẩn:{' '}
-                      <strong className="text-[#B52A2A] font-semibold">
+                      <strong className="text-[#C8322B] font-semibold">
                         HSK {selectedWord.levelCode || selectedWord.hskLevel}
                       </strong>
                     </div>
@@ -456,7 +402,7 @@ export const DailyVocabularyPage: React.FC = () => {
               {/* Mục NGHĨA TIẾNG VIỆT (Đánh số 1, 2, 3...) */}
               <div className="pt-4 border-t border-stone-100">
                 <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-[#B52A2A]" />
+                  <BookOpen className="w-3.5 h-3.5 text-[#C8322B]" />
                   Ý nghĩa tiếng Việt
                 </h3>
 
@@ -491,7 +437,7 @@ export const DailyVocabularyPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     to={`/vocabulary/search?q=${encodeURIComponent(selectedWord.hanzi)}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 hover:text-[#B52A2A] hover:bg-red-50 text-xs font-semibold transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 hover:text-[#C8322B] hover:bg-red-50 text-xs font-semibold transition-colors"
                   >
                     <Search className="w-3.5 h-3.5" />
                     <span>Tra trong từ điển</span>
@@ -499,7 +445,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
                   <Link
                     to="/flashcards"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 hover:text-[#B52A2A] hover:bg-red-50 text-xs font-semibold transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 hover:text-[#C8322B] hover:bg-red-50 text-xs font-semibold transition-colors"
                   >
                     <GraduationCap className="w-3.5 h-3.5" />
                     <span>Ôn qua Flashcard</span>
@@ -508,7 +454,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
                 <Link
                   to="/vocabulary/topic"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#B52A2A] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#C8322B] hover:underline"
                 >
                   <span>Xem từ vựng theo chủ đề</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -523,7 +469,7 @@ export const DailyVocabularyPage: React.FC = () => {
           {/* Header Cột Phải */}
           <div className="flex items-center justify-between pb-3 border-b border-stone-100">
             <div className="flex items-center gap-2 text-stone-800 font-bold text-base">
-              <Clock className="w-4 h-4 text-[#B52A2A]" />
+              <Clock className="w-4 h-4 text-[#C8322B]" />
               <span>Những ngày trước</span>
             </div>
             <span className="text-xs text-stone-400 font-semibold">
@@ -564,8 +510,8 @@ export const DailyVocabularyPage: React.FC = () => {
                     <div
                       className={`text-2xl font-bold tracking-wide shrink-0 transition-colors ${
                         isCurrent
-                          ? 'text-[#B52A2A]'
-                          : 'text-stone-800 group-hover:text-[#B52A2A]'
+                          ? 'text-[#C8322B]'
+                          : 'text-stone-800 group-hover:text-[#C8322B]'
                       }`}
                       style={{ fontFamily: "'Noto Serif SC', serif" }}
                     >
@@ -598,7 +544,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
           {/* Khung Thông Báo Nhỏ Chân Cột Phải */}
           <div className="bg-red-50/60 border border-red-100 rounded-2xl p-3.5 text-xs text-stone-600 text-center leading-relaxed flex items-center justify-center gap-2">
-            <Bell className="w-4 h-4 text-[#B52A2A] shrink-0" />
+            <Bell className="w-4 h-4 text-[#C8322B] shrink-0" />
             <span>Từ vựng mới tự động cập nhật mỗi ngày lúc 00:00.</span>
           </div>
         </div>

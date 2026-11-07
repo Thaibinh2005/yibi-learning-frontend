@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -109,6 +109,8 @@ const IconSpinner = () => (
 )
 
 export const RegisterPage: React.FC = () => {
+  // The feature a guest was heading to, kept through sign-up and login.
+  const origin = (useLocation().state as { from?: { pathname: string; search?: string } } | null)?.from
   const navigate = useNavigate()
 
   const [showPassword, setShowPassword] = useState(false)
@@ -147,7 +149,7 @@ export const RegisterPage: React.FC = () => {
         showToastMsg('Đăng ký tài khoản thành công! Đang chuyển hướng...', 'success')
         setTimeout(() => {
           navigate('/login', {
-            state: { message: 'Đăng ký thành công! Hãy đăng nhập để bắt đầu học.' },
+            state: { from: origin, message: 'Đăng ký thành công! Hãy đăng nhập để bắt đầu học.' },
             replace: true,
           })
         }, 1500)
@@ -175,21 +177,12 @@ export const RegisterPage: React.FC = () => {
       >
         {/* ── Logo ─────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-3 mb-6">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            <span
-              className="font-chinese text-white font-black text-2xl leading-none"
-              style={{ fontFamily: "'Noto Serif SC', serif" }}
-            >
-              易
-            </span>
-          </div>
+          <img src="/logo-yibi.png" alt="Yibi" width={72} height={72} className="h-[72px] w-[72px]" />
 
           <span className="text-2xl font-bold tracking-tight text-slate-800 select-none">
             Yi<span style={{ color: PRIMARY }}>bi</span>
           </span>
+          <span className="-mt-2 text-xs font-semibold text-slate-500 select-none">Học tiếng Trung cá nhân hóa</span>
 
           <div className="w-8 h-[2px] rounded-full mt-0.5" style={{ backgroundColor: PRIMARY, opacity: 0.25 }} />
         </div>
@@ -373,6 +366,7 @@ export const RegisterPage: React.FC = () => {
           Đã có tài khoản?{' '}
           <Link
             to="/login"
+            state={{ from: origin }}
             className="font-semibold transition-colors hover:opacity-80"
             style={{ color: PRIMARY }}
           >

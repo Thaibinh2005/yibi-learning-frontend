@@ -99,10 +99,10 @@ export const AudioButton: React.FC<AudioButtonProps> = ({
       className={cn(
         'inline-flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer shadow-2xs',
         isPlaying
-          ? 'bg-red-100 text-[#B52A2A] ring-2 ring-red-400 scale-105 animate-pulse'
+          ? 'bg-red-100 text-[#C8322B] ring-2 ring-red-400 scale-105 animate-pulse'
           : error
           ? 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-          : 'bg-rose-50 text-[#B52A2A] hover:bg-rose-100 hover:scale-105 active:scale-95',
+          : 'bg-rose-50 text-[#C8322B] hover:bg-rose-100 hover:scale-105 active:scale-95',
         sizeClasses[size],
         className
       )}

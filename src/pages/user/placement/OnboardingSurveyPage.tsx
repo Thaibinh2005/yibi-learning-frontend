@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { ArrowRight, Compass, Loader2, Sprout } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import type { LearningGoalInput } from '@/api/learningPathApi'
 import { saveSurvey } from '@/api/placementApi'
 import { useAppDispatch } from '@/app/hooks'
 import { setOnboardingCompleted } from '@/app/slices/authSlice'
+import { GoalForm } from '@/components/learningpath/GoalForm'
 import { InlineBanner } from '@/components/placement/InlineBanner'
 import { LevelPickCard } from '@/components/placement/LevelPickCard'
 import { StartModeCard } from '@/components/placement/StartModeCard'
@@ -17,6 +19,7 @@ export function OnboardingSurveyPage() {
   const dispatch = useAppDispatch()
   const [level, setLevel] = useState<number | null>(null)
   const [chosenMode, setChosenMode] = useState<StartMode | null>(null)
+  const [goal, setGoal] = useState<LearningGoalInput>({ goalType: 'HSK', targetLevel: 4, dailyMinutes: 20 })
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -29,7 +32,7 @@ export function OnboardingSurveyPage() {
     setSaving(true)
     setFailed(false)
     try {
-      await saveSurvey({ selfLevel: level, startMode: mode })
+      await saveSurvey({ selfLevel: level, startMode: mode, goal })
       if (mode === 'BASIC') {
         dispatch(setOnboardingCompleted(true))
         navigate('/dashboard')
@@ -60,19 +63,25 @@ export function OnboardingSurveyPage() {
       )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <section aria-label="Trình độ" className="grid gap-3 md:grid-cols-2">
-          {SURVEY_LEVELS.map((item) => (
-            <LevelPickCard
-              key={item.value}
-              tag={item.tag}
-              sub={item.sub}
-              title={item.title}
-              description={item.description}
-              selected={level === item.value}
-              onSelect={() => setLevel(item.value)}
-            />
-          ))}
-        </section>
+        <div className="space-y-6">
+          <section aria-label="Trình độ" className="grid gap-3 md:grid-cols-2">
+            {SURVEY_LEVELS.map((item) => (
+              <LevelPickCard
+                key={item.value}
+                tag={item.tag}
+                sub={item.sub}
+                title={item.title}
+                description={item.description}
+                selected={level === item.value}
+                onSelect={() => setLevel(item.value)}
+              />
+            ))}
+          </section>
+          <Card className="rounded-2xl p-5 md:p-6">
+            <h2 className="mb-4 text-lg font-bold tracking-tight text-slate-800">Mục tiêu của bạn</h2>
+            <GoalForm value={goal} onChange={setGoal} />
+          </Card>
+        </div>
 
         <Card className="space-y-3.5 rounded-2xl bg-gradient-to-b from-white to-rose-50/40 p-5 md:p-7 lg:sticky lg:top-24">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Bước 2 / 2</p>

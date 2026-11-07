@@ -1,3 +1,5 @@
+import type { LearningGoalInput } from '@/api/learningPathApi'
+
 export type StartMode = 'BASIC' | 'PLACEMENT'
 
 export type Confidence = 'LOW' | 'MEDIUM' | 'HIGH'
@@ -5,6 +7,7 @@ export type Confidence = 'LOW' | 'MEDIUM' | 'HIGH'
 export interface SurveyRequest {
   selfLevel: number
   startMode: StartMode
+  goal?: LearningGoalInput
 }
 
 export interface PlacementStatus {

@@ -96,14 +96,14 @@ export const FlashcardPage: React.FC = () => {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
         <div>
-          <Link to="/courses" className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#B52A2A]">
+          <Link to="/courses" className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#C8322B]">
             <ArrowLeft className="h-3.5 w-3.5" />
             Trở lại bài học
           </Link>
           <h1 className="text-xl font-bold text-slate-800">Flashcard của bạn</h1>
           <p className="mt-1 text-xs text-slate-500">Ôn các từ đã lưu theo lịch lặp lại ngắt quãng.</p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-[#B52A2A]">
+        <span className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-[#C8322B]">
           <Layers className="h-4 w-4" />
           {queue.length} thẻ đến hạn
         </span>
@@ -136,7 +136,7 @@ export const FlashcardPage: React.FC = () => {
             <WordAudio hanzi={displayHanzi(current.card.hanzi)} audioUrl={current.card.audioUrl} />
             {revealed ? (
               <>
-                <p className="mt-4 text-lg font-semibold text-[#B52A2A]">{current.card.pinyin}</p>
+                <p className="mt-4 text-lg font-semibold text-[#C8322B]">{current.card.pinyin}</p>
                 <p className="mt-1 text-sm text-slate-600">{current.card.meaningVi || 'Chưa có nghĩa tiếng Việt'}</p>
                 {current.card.partOfSpeech && (
                   <span className="mt-2 text-xs font-medium italic text-slate-400">({current.card.partOfSpeech})</span>
@@ -163,7 +163,7 @@ export const FlashcardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setRevealed(true)}
-              className="w-full rounded-xl bg-[#B52A2A] px-4 py-3 text-sm font-semibold text-white hover:bg-red-800"
+              className="w-full rounded-xl bg-[#C8322B] px-4 py-3 text-sm font-semibold text-white hover:bg-red-800"
             >
               Lật thẻ
             </button>
@@ -185,7 +185,7 @@ export const FlashcardPage: React.FC = () => {
             Học thêm từ theo chủ đề hoặc từ một bài học, rồi quay lại sau để ôn tiếp.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <Link to="/vocabulary/topic" className="inline-flex items-center gap-2 rounded-xl bg-[#B52A2A] px-4 py-2.5 text-sm font-semibold text-white">
+            <Link to="/vocabulary/topic" className="inline-flex items-center gap-2 rounded-xl bg-[#C8322B] px-4 py-2.5 text-sm font-semibold text-white">
               <BookOpen className="h-4 w-4" />
               Từ vựng theo chủ đề
             </Link>

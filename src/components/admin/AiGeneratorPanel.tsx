@@ -41,7 +41,7 @@ const SKILL_LABELS: Record<string, string> = {
 }
 
 const FIELD =
-  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#B52A2A] focus:outline-none focus:ring-1 focus:ring-[#B52A2A]'
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#C8322B] focus:outline-none focus:ring-1 focus:ring-[#C8322B]'
 const LABEL = 'mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500'
 
 /** Asks Gemini for questions at one level; the ones that pass the checks are saved as DRAFT for review. */
@@ -101,7 +101,7 @@ export function AiGeneratorPanel({ onGenerated }: AiGeneratorPanelProps) {
                   type="button"
                   onClick={() => setLevelCode(level)}
                   className={`cursor-pointer rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                    levelCode === level ? 'bg-[#B52A2A] text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    levelCode === level ? 'bg-[#C8322B] text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   HSK {level}
@@ -176,7 +176,7 @@ export function AiGeneratorPanel({ onGenerated }: AiGeneratorPanelProps) {
             <button
               type="submit"
               disabled={running}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#B52A2A] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition-all hover:bg-red-800 active:scale-95 disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#C8322B] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition-all hover:bg-red-800 active:scale-95 disabled:opacity-50"
             >
               {running ? (
                 <>
