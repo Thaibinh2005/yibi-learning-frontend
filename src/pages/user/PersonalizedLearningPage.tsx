@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Compass, Library, Loader2, Pencil, RefreshCw } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ArrowRight, BookOpen, Compass, Library, Loader2, Pencil, RefreshCw, Sparkles, Target } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useRequireLogin } from '@/router/useRequireLogin'
 import {
   getLearningPathOverview,
   getRoadmap,
@@ -64,7 +65,50 @@ const RadarChart: React.FC<{ skills: SkillStat[] }> = ({ skills }) => {
   )
 }
 
+/**
+ * A guest picks how to learn: a personal path needs an account (placement, goals, saved progress),
+ * the textbook library can be browsed straight away.
+ */
+const GuestPathChooser: React.FC = () => {
+  const navigate = useNavigate()
+  const { requireLogin } = useRequireLogin()
+  const choosePersonal = () => {
+    if (requireLogin({ pathname: '/learning-path' })) navigate('/learning-path')
+  }
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Lộ trình học</h1>
+        <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">Chọn cách bạn muốn học tiếng Trung với Yibi.</p>
+      </header>
+      <div className="grid gap-4 md:grid-cols-2">
+        <button type="button" onClick={choosePersonal} className="card-soft group flex flex-col items-start gap-3 p-6 text-left transition hover:-translate-y-0.5 hover:shadow-md">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-brand"><Sparkles className="h-6 w-6" /></span>
+          <span className="text-lg font-extrabold text-slate-900">Theo cá nhân</span>
+          <span className="text-sm leading-relaxed text-slate-500">Làm bài test xếp trình độ, đặt mục tiêu và nhận lộ trình riêng theo điểm mạnh, điểm yếu của bạn. Tiến độ được lưu lại.</span>
+          <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-bold text-brand">Đăng nhập để bắt đầu<ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+        </button>
+        <Link to="/courses" className="card-soft group flex flex-col items-start gap-3 p-6 transition hover:-translate-y-0.5 hover:shadow-md">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-sky-100 text-sky-700"><BookOpen className="h-6 w-6" /></span>
+          <span className="text-lg font-extrabold text-slate-900">Theo giáo trình</span>
+          <span className="text-sm leading-relaxed text-slate-500">Xem nội dung giáo trình HSK 1–9: từ vựng, ngữ pháp, chữ Hán, bài đọc và bài nghe.</span>
+          <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-bold text-sky-700">Mở thư viện giáo trình<ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+        </Link>
+      </div>
+      <section className="card-soft flex items-start gap-4 p-5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700"><Target className="h-5 w-5" /></span>
+        <p className="text-sm leading-relaxed text-slate-600">Lộ trình cá nhân chia bài theo đơn vị, nhắc ôn từ vựng và câu từng sai mỗi ngày, có bài kiểm tra vượt cấp khi bạn đã sẵn sàng.</p>
+      </section>
+    </div>
+  )
+}
+
 export const PersonalizedLearningPage: React.FC = () => {
+  const { isAuthenticated } = useRequireLogin()
+  return isAuthenticated ? <LearnerPath /> : <GuestPathChooser />
+}
+
+const LearnerPath: React.FC = () => {
   const [overview, setOverview] = useState<LearningPathOverview | null>(null)
   const [plan, setPlan] = useState<DailyPlan | null>(null)
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null)

@@ -7,6 +7,7 @@ import { getCourses, type Course } from '@/api/courseApi'
 import { getLearningPathOverview } from '@/api/learningPathApi'
 import { generateAiLessonContent, getCompletedLessonIds, getLessonsByCourse, markLessonCompleted, startLessonPracticeSession, submitPracticeAnswer, type GeneratedLessonActivity, type Lesson, type LessonContentItem, type PracticeAnswerResult } from '@/api/lessonApi'
 import { addLessonVocabularyToFlashcards } from '@/api/srsApi'
+import { useRequireLogin } from '@/router/useRequireLogin'
 import { AudioButton } from '@/components/ui/AudioButton'
 
 // Level 7 is the combined HSK 7–9 band: the syllabus does not split it.
@@ -94,12 +95,15 @@ export const LearningPage: React.FC = () => {
   const requestedLessonId = searchParams.get('lessonId')
   const user = useAppSelector((state) => state.auth.user)
   const isAdmin = user?.role === 'ROLE_ADMIN'
+  const { isAuthenticated, requireLogin } = useRequireLogin()
   // Read fresh, since the level can rise during a lesson. Null until known, so no locked lesson is ever requested.
   const [learnerLevel, setLearnerLevel] = useState<number | null>(null)
   const levelLocked = (level: number) => !isAdmin && learnerLevel !== null && level > learnerLevel
   const locked = levelLocked(selectedHskLevel)
 
   useEffect(() => {
+    // A guest browses every level; opening a lesson asks them to sign in.
+    if (!isAuthenticated) { setLearnerLevel(HSK_LEVELS.length); return }
     getLearningPathOverview().then((overview) => setLearnerLevel(overview.availableHskLevel)).catch(() => setLearnerLevel(user?.hskLevel ?? 1))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per visit
   }, [])
@@ -179,6 +183,8 @@ export const LearningPage: React.FC = () => {
   const sourceExerciseCount = selectedLesson?.lessonPayload?.sections?.exercises?.length ?? 0
 
   const openLesson = (lesson: Lesson) => {
+    // Studying a lesson needs an account; after signing in the learner comes back to this lesson.
+    if (!requireLogin({ pathname: '/courses', search: `?hskLevel=${selectedHskLevel}&lessonId=${lesson.id}` })) return
     setSelectedLesson(lesson)
     setPracticeMode(false)
     setFlashcardMessage('')
@@ -187,17 +193,18 @@ export const LearningPage: React.FC = () => {
   }
 
   useEffect(() => {
+    if (!isAuthenticated) return
     getCompletedLessonIds().then((ids) => setCompletedIds(new Set(ids))).catch(() => undefined)
   }, [])
 
   useEffect(() => {
-    if (!requestedLessonId || openedFromLink === requestedLessonId) return
+    if (!isAuthenticated || !requestedLessonId || openedFromLink === requestedLessonId) return
     const lesson = lessons.find((item) => String(item.id) === requestedLessonId)
     if (!lesson) return
     setSelectedTopic(lesson.contentType)
     openLesson(lesson)
     setOpenedFromLink(requestedLessonId)
-  }, [lessons, requestedLessonId, openedFromLink])
+  }, [lessons, requestedLessonId, openedFromLink, isAuthenticated])
 
   const completeLesson = async () => {
     if (!selectedLesson) return

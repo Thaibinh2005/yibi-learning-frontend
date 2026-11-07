@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, BookOpen, Layers, LoaderCircle, RotateCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useAppSelector } from '@/app/hooks'
+import { GuestNotice } from '@/components/ui/GuestNotice'
 import { getDueFlashcards, rateVocabulary, type SrsCard, type SrsRating } from '@/api/srsApi'
 import {
   ExampleSentence,
@@ -20,7 +22,23 @@ interface QueueItem {
 
 const displayHanzi = (hanzi: string) => hanzi.replace(/[0-9]+$/, '')
 
+/** The review deck is the learner's own; a guest can still practise topic flashcards without saving. */
 export const FlashcardPage: React.FC = () => {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+  if (isAuthenticated) return <LearnerFlashcards />
+  return (
+    <div className="space-y-6">
+      <header className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+        <h1 className="text-xl font-bold text-slate-800">Flashcard</h1>
+        <p className="mt-1 text-xs text-slate-500">Ôn từ vựng theo lịch lặp lại ngắt quãng.</p>
+      </header>
+      <GuestNotice title="Bộ flashcard của riêng bạn" message="Đăng nhập để lưu từ vào bộ flashcard và được nhắc ôn đúng lúc. Bạn vẫn có thể luyện flashcard theo chủ đề mà không cần tài khoản." />
+      <Link to="/vocabulary/topic" className="mx-auto flex w-fit items-center gap-2 text-sm font-bold text-slate-600 hover:text-brand"><BookOpen className="h-4 w-4" />Luyện flashcard theo chủ đề</Link>
+    </div>
+  )
+}
+
+const LearnerFlashcards: React.FC = () => {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [revealed, setRevealed] = useState(false)
   const [loading, setLoading] = useState(true)

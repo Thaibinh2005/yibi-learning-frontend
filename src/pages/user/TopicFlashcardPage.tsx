@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Eye, Layers, LoaderCircle, RotateCcw, Sparkles, Trophy } from 'lucide-react'
 import { getTopicBySlug, getVocabulariesByTopic } from '@/api/topicApi'
 import { rateVocabulary, type SrsRating } from '@/api/srsApi'
+import { useAppSelector } from '@/app/hooks'
 import {
   ExampleSentence,
   RATING_BUTTONS,
@@ -40,6 +41,7 @@ const displayHanzi = (hanzi: string) => hanzi.replace(/[0-9]+$/, '')
 let queueKeySeq = 0
 
 export const TopicFlashcardPage: React.FC = () => {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
   const hskFilter = searchParams.get('hsk') || undefined
@@ -124,7 +126,8 @@ export const TopicFlashcardPage: React.FC = () => {
       setSaving(true)
       setError('')
       let intervalDays: number | undefined
-      try {
+      // A guest practises without saving; only a signed-in learner's ratings go to their review deck.
+      if (isAuthenticated) try {
         const card = await rateVocabulary(current.vocab.id, rating)
         intervalDays = card?.intervalDays
       } catch {
@@ -144,7 +147,7 @@ export const TopicFlashcardPage: React.FC = () => {
       setNow(t)
       setSaving(false)
     },
-    [current, saving]
+    [current, saving, isAuthenticated]
   )
 
   /* Keyboard: Space/Enter = lật thẻ, 1-4 = chọn mức độ. */

@@ -57,6 +57,11 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // A guest has no session to refresh: hand the error to the page instead of forcing a trip to /login.
+    if (!localStorage.getItem('yibi_access_token') && !localStorage.getItem('yibi_refresh_token')) {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       if (isRefreshing) {
         // Queue pending requests while token is being refreshed
