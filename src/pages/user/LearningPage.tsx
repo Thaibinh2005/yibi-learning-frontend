@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3, Layers, LoaderCircle, Lock, Play, Sparkles, X, XCircle } from 'lucide-react'
+import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3, Layers, LoaderCircle, Play, Sparkles, X, XCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/app/hooks'
 import { getCourses, type Course } from '@/api/courseApi'
-import { getLearningPathOverview } from '@/api/learningPathApi'
 import { generateAiLessonContent, getCompletedLessonIds, getLessonsByCourse, markLessonCompleted, startLessonPracticeSession, submitPracticeAnswer, type GeneratedLessonActivity, type Lesson, type LessonContentItem, type PracticeAnswerResult } from '@/api/lessonApi'
 import { addLessonVocabularyToFlashcards } from '@/api/srsApi'
 import { useRequireLogin } from '@/router/useRequireLogin'
@@ -96,17 +95,7 @@ export const LearningPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user)
   const isAdmin = user?.role === 'ROLE_ADMIN'
   const { isAuthenticated, requireLogin } = useRequireLogin()
-  // Read fresh, since the level can rise during a lesson. Null until known, so no locked lesson is ever requested.
-  const [learnerLevel, setLearnerLevel] = useState<number | null>(null)
-  const levelLocked = (level: number) => !isAdmin && learnerLevel !== null && level > learnerLevel
-  const locked = levelLocked(selectedHskLevel)
-
-  useEffect(() => {
-    // A guest browses every level; opening a lesson asks them to sign in.
-    if (!isAuthenticated) { setLearnerLevel(HSK_LEVELS.length); return }
-    getLearningPathOverview().then((overview) => setLearnerLevel(overview.availableHskLevel)).catch(() => setLearnerLevel(user?.hskLevel ?? 1))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per visit
-  }, [])
+  // The library is open at every level, whatever the learner's place on the path.
 
   useEffect(() => {
     if (!lessonModalOpen) return
@@ -139,7 +128,7 @@ export const LearningPage: React.FC = () => {
   }, [selectedHskLevel])
 
   useEffect(() => {
-    if (!selectedCourse || locked || (!isAdmin && learnerLevel === null)) { setLessons([]); setSelectedLesson(null); return }
+    if (!selectedCourse) { setLessons([]); setSelectedLesson(null); return }
     let active = true
     setLoadingLessons(true)
     getLessonsByCourse(selectedCourse.id).then((items) => {
@@ -150,7 +139,7 @@ export const LearningPage: React.FC = () => {
     }).catch(() => active && setError('Không tải được danh sách bài học.'))
       .finally(() => active && setLoadingLessons(false))
     return () => { active = false }
-  }, [selectedCourse?.id, locked, learnerLevel, isAdmin])
+  }, [selectedCourse?.id])
 
   useEffect(() => {
     setSelectedTopic(TOPIC_GROUPS.find((group) => lessons.some((lesson) => lesson.contentType === group.key))?.key ?? TOPIC_GROUPS[0].key)
@@ -342,11 +331,11 @@ export const LearningPage: React.FC = () => {
       </header>
 
       <nav aria-label="Chọn cấp giáo trình HSK" className="flex flex-wrap gap-2">
-        {HSK_LEVELS.map((level) => <Link key={level} to={`/courses?hskLevel=${level}`} aria-current={selectedHskLevel === level ? 'page' : undefined} className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${selectedHskLevel === level ? 'border-[#C8322B] bg-red-50 text-[#C8322B]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}><span className="inline-flex items-center gap-1.5">{levelLocked(level) && <Lock className="h-3.5 w-3.5" aria-label="Chưa mở" />}HSK {hskLabel(level)}</span></Link>)}
+        {HSK_LEVELS.map((level) => <Link key={level} to={`/courses?hskLevel=${level}`} aria-current={selectedHskLevel === level ? 'page' : undefined} className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${selectedHskLevel === level ? 'border-[#C8322B] bg-red-50 text-[#C8322B]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>HSK {hskLabel(level)}</Link>)}
       </nav>
 
       {error && <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
-      {locked ? <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-500"><Lock className="h-6 w-6" /></span><h2 className="mt-3 text-lg font-extrabold text-slate-900">HSK {hskLabel(selectedHskLevel)} chưa mở</h2><p className="mx-auto mt-1 max-w-md text-sm text-slate-500">Bạn đang ở HSK {hskLabel(learnerLevel ?? 1)}. Hoàn thành lộ trình hoặc đạt bài kiểm tra vượt cấp để mở cấp tiếp theo.</p><Link to="/learning-path" className="btn-chunky btn-brand mt-4 px-5 py-2.5 text-sm"><Sparkles className="h-4 w-4" />Về lộ trình</Link></div> : loadingCourses || loadingLessons || (!isAdmin && learnerLevel === null) ? <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải giáo trình...</div> : courses.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Chưa có dữ liệu cho HSK {hskLabel(selectedHskLevel)}.</div> : (
+      {loadingCourses || loadingLessons ? <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải giáo trình...</div> : courses.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Chưa có dữ liệu cho HSK {hskLabel(selectedHskLevel)}.</div> : (
         <div className="grid gap-5 lg:grid-cols-[330px_minmax(0,1fr)]">
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
             <div className="mb-3 flex items-center justify-between px-2 text-xs font-bold uppercase tracking-wide text-slate-500"><span>Nhóm bài</span><span>{lessons.length} bài</span></div>

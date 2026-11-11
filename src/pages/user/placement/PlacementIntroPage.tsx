@@ -40,7 +40,7 @@ export function PlacementIntroPage() {
   const startFromBasics = async () => {
     await saveSurvey({ selfLevel: status?.selfReportedLevel ?? 0, startMode: 'BASIC' })
     dispatch(setOnboardingCompleted(true))
-    navigate('/dashboard')
+    navigate('/learning-path', { replace: true })
   }
 
   const restart = async () => {

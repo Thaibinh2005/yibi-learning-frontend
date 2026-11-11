@@ -94,18 +94,12 @@ export function PlacementResultPage() {
   const confidence = CONFIDENCE[result.confidence]
   const weakSkill = result.weaknesses.map(skillLabel).join(', ')
   const steps: NextStep[] = [
-    result.recommendedCourseId !== undefined
-      ? {
-          icon: <GraduationCap className="h-5 w-5" />,
-          title: `Bắt đầu khóa học HSK ${result.recommendedLevel}`,
-          description: `Lộ trình được đặt ở HSK ${result.level}, mục tiêu tiếp theo HSK ${Math.min(9, result.level + 1)}.`,
-          to: `/courses?hskLevel=${Math.min(result.recommendedLevel, 7)}`,
-        }
-      : {
-          icon: <GraduationCap className="h-5 w-5" />,
-          title: `Khóa học HSK ${result.recommendedLevel}`,
-          description: `Chưa có khóa học ở cấp này. Lộ trình vẫn được đặt ở HSK ${result.level}.`,
-        },
+    {
+      icon: <GraduationCap className="h-5 w-5" />,
+      title: `Bắt đầu lộ trình HSK ${result.level}`,
+      description: `Lộ trình riêng của bạn đã được đặt ở HSK ${result.level}, mục tiêu tiếp theo HSK ${Math.min(9, result.level + 1)}.`,
+      to: '/learning-path',
+    },
     ...(result.reviewCardsAdded > 0
       ? [
           {

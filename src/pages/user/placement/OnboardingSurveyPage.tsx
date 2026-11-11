@@ -35,7 +35,7 @@ export function OnboardingSurveyPage() {
       await saveSurvey({ selfLevel: level, startMode: mode, goal })
       if (mode === 'BASIC') {
         dispatch(setOnboardingCompleted(true))
-        navigate('/dashboard')
+        navigate('/learning-path', { replace: true })
       } else {
         navigate('/placement')
       }
