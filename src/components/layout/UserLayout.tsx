@@ -42,6 +42,7 @@ const VOCABULARY_SUB_ITEMS = [
   { label: 'Từ vựng mỗi ngày', path: '/vocabulary/daily' },
   { label: 'Tra cứu từ vựng', path: '/vocabulary/search' },
   { label: 'Từ vựng theo chủ đề', path: '/vocabulary/topic' },
+  { label: 'Viết chữ', path: '/vocabulary/writing' },
 ]
 
 /** These pages take the whole screen, so nothing competes with the question being answered. */
