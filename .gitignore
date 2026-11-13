@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Stroke files copied by scripts/copy-hanzi-data.mjs
+public/hanzi-data

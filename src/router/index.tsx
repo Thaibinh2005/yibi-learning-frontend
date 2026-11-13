@@ -12,6 +12,7 @@ import { VocabularyTopicPage } from '@/pages/user/VocabularyTopicPage'
 import { VocabularyTopicDetailPage } from '@/pages/user/VocabularyTopicDetailPage'
 import { TopicFlashcardPage } from '@/pages/user/TopicFlashcardPage'
 import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
+import { HanziWritingPage } from '@/pages/user/HanziWritingPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
 import { PracticePage } from '@/pages/user/PracticePage'
 import { PathLessonPage, PathLevelTestPage } from '@/pages/user/PathLessonPage'
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
           { path: '/vocabulary/daily', element: <DailyVocabularyPage /> },
           { path: '/vocabulary/search', element: <VocabularyPage /> },
           { path: '/vocabulary/notebook', element: <Navigate to="/vocabulary/search" replace /> },
+          { path: '/vocabulary/writing', element: <HanziWritingPage /> },
           { path: '/vocabulary/topic', element: <VocabularyTopicPage /> },
           { path: '/vocabulary/topic/:slug', element: <VocabularyTopicDetailPage /> },
           { path: '/vocabulary/topic/:slug/flashcards', element: <TopicFlashcardPage /> },
