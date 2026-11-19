@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { GraduationCap, Info, Layers, RotateCcw, ShieldCheck, Zap } from 'lucide-react'
+import { GraduationCap, History, Info, Layers, ListChecks, RotateCcw, ShieldCheck, Zap } from 'lucide-react'
 import { isAxiosError } from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getPlacementResult } from '@/api/placementApi'
@@ -212,10 +212,20 @@ export function PlacementResultPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-xs text-slate-500">Đây là ước lượng để xây lộ trình học, không thay thế bài thi HSK chính thức.</p>
-        <Button variant="outline" className="gap-2 rounded-xl" onClick={() => navigate('/placement')}>
-          <RotateCcw className="h-4 w-4" />
-          Làm lại bài test
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button className="gap-2 rounded-xl" onClick={() => navigate(`/placement/result/${result.attemptId}/review`)}>
+            <ListChecks className="h-4 w-4" />
+            Xem lại bài làm
+          </Button>
+          <Button variant="outline" className="gap-2 rounded-xl" onClick={() => navigate('/placement/history')}>
+            <History className="h-4 w-4" />
+            Lịch sử đánh giá
+          </Button>
+          <Button variant="outline" className="gap-2 rounded-xl" onClick={() => navigate('/placement')}>
+            <RotateCcw className="h-4 w-4" />
+            Làm lại bài test
+          </Button>
+        </div>
       </div>
     </div>
   )

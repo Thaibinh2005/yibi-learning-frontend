@@ -2,6 +2,8 @@ import axiosClient from '@/api/axiosClient'
 import type { ApiResponse } from '@/types/auth'
 import type {
   PlacementAnswer,
+  PlacementHistoryItem,
+  PlacementReview,
   PlacementResult,
   PlacementStatus,
   PlacementStep,
@@ -50,3 +52,11 @@ export const abandonPlacement = async (attemptId: number) =>
 
 export const getPlacementResult = async (attemptId: number) =>
   (await axiosClient.get<ApiResponse<PlacementResult>>(`/placement/${attemptId}/result`)).data.data
+
+/** Finished attempts, newest first. */
+export const getPlacementHistory = async () =>
+  (await axiosClient.get<ApiResponse<PlacementHistoryItem[]>>('/placement/history')).data.data
+
+/** Every question of a finished attempt with the learner's answer, the right answer and the explanation. */
+export const getPlacementReview = async (attemptId: number) =>
+  (await axiosClient.get<ApiResponse<PlacementReview>>(`/placement/${attemptId}/review`)).data.data

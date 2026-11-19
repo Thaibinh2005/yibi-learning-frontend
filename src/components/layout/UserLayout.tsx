@@ -45,8 +45,8 @@ const VOCABULARY_SUB_ITEMS = [
   { label: 'Viết chữ', path: '/vocabulary/writing' },
 ]
 
-/** These pages take the whole screen, so nothing competes with the question being answered. */
-const FOCUS_PAGES = /^\/learning-path\/(lesson\/|level-test\/|mistakes\/review)/
+/** These pages take the whole screen, so nothing competes with the question being answered or the card being studied. */
+const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards)/
 
 const navRow = (active: boolean) =>
   `flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-[15px] font-bold transition-colors ${
@@ -130,13 +130,16 @@ export const UserLayout: React.FC = () => {
     const { pathname } = location
     const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === pathname)
     if (sub) return sub.label
+    if (pathname.startsWith('/flashcards/decks')) return 'Bộ từ vựng của tôi'
     if (pathname === '/tips') return 'Mẹo học'
     if (pathname === '/vocabulary') return 'Kho từ vựng HSK'
     if (pathname.startsWith('/vocabulary')) return 'Từ vựng'
     if (pathname === '/learning-path/practice') return 'Luyện tập'
     if (pathname === '/learning-path/mistakes') return 'Câu từng sai'
     if (pathname.startsWith('/onboarding')) return 'Khảo sát trình độ'
+    if (pathname.startsWith('/placement/result') && pathname.endsWith('/review')) return 'Xem lại bài làm'
     if (pathname.startsWith('/placement/result')) return 'Kết quả xếp trình độ'
+    if (pathname.startsWith('/placement/history')) return 'Lịch sử đánh giá trình độ'
     if (pathname.startsWith('/placement')) return 'Bài test xếp trình độ'
     if (pathname === '/courses') {
       const level = Number(new URLSearchParams(location.search).get('hskLevel') || 1)
@@ -283,7 +286,7 @@ export const UserLayout: React.FC = () => {
           )}
         </header>
 
-        <main className="animate-fade-in mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-2 sm:px-6 md:pb-10 lg:px-8">
+        <main className="animate-fade-in mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-2 sm:px-6 md:pb-10 lg:px-8">
           <Outlet />
         </main>
       </div>

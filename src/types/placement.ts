@@ -109,3 +109,49 @@ export interface PlacementResult {
   reviewCardsAdded: number
   missedWords: MissedWord[]
 }
+
+/** One finished attempt in the learner's placement history. */
+export interface PlacementHistoryItem {
+  attemptId: number
+  level: number
+  confidence: Confidence
+  questionCount: number
+  correctCount: number
+  startedAt: string
+  finishedAt: string
+  durationSeconds: number
+}
+
+export interface ReviewChoice {
+  key: string
+  text: string
+  correct: boolean
+}
+
+export interface ReviewItem {
+  order: number
+  /** Missing when the question has since been removed from the bank. */
+  questionId?: number
+  skill: string
+  skillLabel: string
+  type?: QuestionType
+  levelCode?: string
+  prompt?: string
+  promptPinyin?: string
+  audioUrl?: string
+  choices: ReviewChoice[]
+  /** The option the learner picked; missing for a speaking question. */
+  selectedChoiceKey?: string
+  /** The expected answer when there are no options, such as the sentence to read aloud. */
+  answerText?: string
+  explanation?: string
+  correct: boolean
+  responseTimeSeconds: number
+}
+
+export interface PlacementReview {
+  attemptId: number
+  level: number
+  finishedAt: string
+  items: ReviewItem[]
+}

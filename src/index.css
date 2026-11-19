@@ -171,3 +171,32 @@
   }
   .animate-confetti { display: none; }
 }
+
+/* ── Flashcard flip (FlipCard) ─────────────────────────────── */
+/* Both faces share one grid cell, so the card keeps one height while it turns. */
+@layer components {
+  .flip-card {
+    perspective: 1400px;
+  }
+  .flip-card-inner {
+    display: grid;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+  }
+  .flip-card-inner.is-flipped {
+    transform: rotateY(180deg);
+  }
+  .flip-card-face {
+    grid-area: 1 / 1;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  .flip-card-back {
+    transform: rotateY(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .flip-card-inner {
+      transition: none;
+    }
+  }
+}

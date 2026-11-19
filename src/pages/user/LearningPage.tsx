@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { HighlightWord } from '@/components/ui/HighlightWord'
 import { createPortal } from 'react-dom'
 import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3, Layers, LoaderCircle, Play, Sparkles, X, XCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -288,7 +289,7 @@ export const LearningPage: React.FC = () => {
             {showValue(item.part_of_speech) && <span className="rounded bg-white px-1.5 py-0.5 text-xs text-slate-500">{showValue(item.part_of_speech)}</span>}
           </p>
           {meaning ? <p className="mt-1 text-sm leading-relaxed text-slate-600">{meaning}{!item.meaning_vi && ' (tiếng Anh)'}</p> : <p className="mt-1 text-xs text-slate-400">Chưa có nghĩa.</p>}
-          {example && <p className="mt-2 border-l-2 border-slate-200 pl-3 text-sm leading-relaxed"><span className="font-chinese text-slate-800">{showValue(example.zh)}</span><span className="block text-xs text-slate-500">{showValue(example.en)}</span></p>}
+          {example && <p className="mt-2 border-l-2 border-slate-200 pl-3 text-sm leading-relaxed"><span className="font-chinese text-slate-800"><HighlightWord sentence={showValue(example.zh)} word={item.simplified} /></span>{showValue(example.vi) && <span className="block text-xs text-slate-500">{showValue(example.vi)}</span>}</p>}
         </article>
       )
     }

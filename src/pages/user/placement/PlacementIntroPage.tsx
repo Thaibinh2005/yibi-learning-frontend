@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowRight, CheckCircle2, Lightbulb, Mic, MicOff, Play, RotateCcw, Sprout, Volume2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, History, Lightbulb, Mic, MicOff, Play, RotateCcw, Sprout, Volume2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { abandonPlacement, getPlacementStatus, saveSurvey } from '@/api/placementApi'
 import { useAppDispatch } from '@/app/hooks'
@@ -178,6 +178,12 @@ export function PlacementIntroPage() {
               </Button>
             )}
           </div>
+          {status.latestAttemptId !== undefined && (
+            <Button variant="link" className="h-auto gap-1.5 p-0 text-slate-600" onClick={() => navigate('/placement/history')}>
+              <History className="h-4 w-4" />
+              Xem kết quả và bài làm các lần trước
+            </Button>
+          )}
         </Card>
 
         <aside className="space-y-4 lg:sticky lg:top-24" aria-label="Chuẩn bị">

@@ -12,6 +12,23 @@ export const authApi = {
     return response.data
   },
 
+  /** Step 1 of sign-up: checks the form and emails a 6-digit code. Nothing is created yet. */
+  sendRegisterOtp: async (data: RegisterRequest): Promise<ApiResponse<void>> => {
+    const response = await axiosClient.post<ApiResponse<void>>('/auth/register/send-otp', data)
+    return response.data
+  },
+
+  resendRegisterOtp: async (email: string): Promise<ApiResponse<void>> => {
+    const response = await axiosClient.post<ApiResponse<void>>('/auth/register/resend-otp', { email })
+    return response.data
+  },
+
+  /** Step 2 of sign-up: the right code creates the account and signs it in. */
+  verifyRegisterOtp: async (email: string, code: string): Promise<ApiResponse<AuthResponse>> => {
+    const response = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/register/verify', { email, code })
+    return response.data
+  },
+
   logout: async (): Promise<ApiResponse<void>> => {
     const response = await axiosClient.post<ApiResponse<void>>('/auth/logout')
     return response.data

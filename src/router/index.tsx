@@ -14,6 +14,9 @@ import { TopicFlashcardPage } from '@/pages/user/TopicFlashcardPage'
 import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
 import { HanziWritingPage } from '@/pages/user/HanziWritingPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
+import { DecksPage } from '@/pages/user/DecksPage'
+import { FlashcardReviewPage } from '@/pages/user/FlashcardReviewPage'
+import { DeckDetailPage } from '@/pages/user/DeckDetailPage'
 import { PracticePage } from '@/pages/user/PracticePage'
 import { PathLessonPage, PathLevelTestPage } from '@/pages/user/PathLessonPage'
 import { PathMistakesPage, PathMistakesReviewPage } from '@/pages/user/PathMistakesPage'
@@ -23,6 +26,8 @@ import { PlacementIntroPage } from '@/pages/user/placement/PlacementIntroPage'
 import { PlacementTestPage } from '@/pages/user/placement/PlacementTestPage'
 import { PlacementFinishPage } from '@/pages/user/placement/PlacementFinishPage'
 import { PlacementResultPage } from '@/pages/user/placement/PlacementResultPage'
+import { PlacementReviewPage } from '@/pages/user/placement/PlacementReviewPage'
+import { PlacementHistoryPage } from '@/pages/user/placement/PlacementHistoryPage'
 import { OnboardingGate } from './OnboardingGate'
 import { DashboardGate } from './DashboardGate'
 import { HskkPage } from '@/pages/user/HskkPage'
@@ -90,6 +95,9 @@ export const router = createBrowserRouter([
           { path: '/vocabulary/quantifiers', element: <Navigate to="/vocabulary/daily" replace /> },
           // ── Other Features ──
           { path: '/flashcards', element: <FlashcardPage /> },
+          { path: '/flashcards/review', element: <FlashcardReviewPage /> },
+          { path: '/flashcards/decks', element: <DecksPage /> },
+          { path: '/flashcards/decks/:deckId', element: <DeckDetailPage /> },
           { path: '/exams', element: <ExamPage /> },
         ],
       },
@@ -114,6 +122,8 @@ export const router = createBrowserRouter([
               { path: '/placement/test', element: <PlacementTestPage /> },
               { path: '/placement/finish', element: <PlacementFinishPage /> },
               { path: '/placement/result/:attemptId', element: <PlacementResultPage /> },
+              { path: '/placement/result/:attemptId/review', element: <PlacementReviewPage /> },
+              { path: '/placement/history', element: <PlacementHistoryPage /> },
             ],
           },
         ],

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { HighlightWord } from '@/components/ui/HighlightWord'
 import { ArrowRight, Check, History, Languages, Layers, LoaderCircle, Mic, RotateCcw, Sparkles, Star, X } from 'lucide-react'
 import type { CheckedAnswer, LessonStep, PathContentItem, PathQuiz, QuizOutcome, quizApi, SpeakingResult } from '@/api/learningPathApi'
 import { SpeakLine } from './SpeakLine'
@@ -51,8 +52,9 @@ const WordStep: React.FC<{ word: PathContentItem }> = ({ word }) => {
         {text(word.part_of_speech) && <p className="font-chinese mt-2 text-xs text-slate-500">{text(word.part_of_speech)}</p>}
         {example && text(example.zh) && (
           <div className="mt-6 rounded-2xl bg-slate-50 px-4 py-3 text-left">
-            <p className="font-chinese text-base font-medium text-slate-800">{text(example.zh)}</p>
-            <p className="mt-0.5 text-sm text-slate-500">{text(example.vi) || text(example.en)}</p>
+            <p className="font-chinese text-base font-medium text-slate-800"><HighlightWord sentence={text(example.zh)} word={text(word.simplified)} /></p>
+            {text(example.pinyin) && <p className="mt-0.5 text-sm text-brand/80">{text(example.pinyin)}</p>}
+            {text(example.vi) && <p className="mt-0.5 text-sm text-slate-500">{text(example.vi)}</p>}
           </div>
         )}
       </article>

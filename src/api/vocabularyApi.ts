@@ -1,6 +1,6 @@
 import axiosClient from './axiosClient'
 import type { ApiResponse } from '@/types/auth'
-import type { Vocabulary, DailyVocabulary, VocabularyQueryParams } from '@/types/vocabulary'
+import type { Vocabulary, DailyVocabulary, VocabularyQueryParams, WordDetails } from '@/types/vocabulary'
 
 /**
  * Gọi endpoint GET /api/vocabularies với các tham số query (params):
@@ -51,3 +51,9 @@ export const vocabularyApi = {
 }
 
 export default vocabularyApi
+
+/** Stored content of a word for its detail modal (examples, characters, words sharing a character, topics). */
+export const getWordDetails = async (id: number): Promise<ApiResponse<WordDetails>> => {
+  const response = await axiosClient.get<ApiResponse<WordDetails>>(`/vocabularies/${id}/details`)
+  return response.data
+}

@@ -1,17 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Eye, Layers, LoaderCircle, RotateCcw, Sparkles, Trophy } from 'lucide-react'
+import { Eye, LoaderCircle, RotateCcw, Sparkles, Trophy } from 'lucide-react'
 import { getTopicBySlug, getVocabulariesByTopic } from '@/api/topicApi'
 import { rateVocabulary, type SrsRating } from '@/api/srsApi'
 import { useAppSelector } from '@/app/hooks'
+import { LessonFrame } from '@/components/learningpath/LessonFrame'
 import {
   ExampleSentence,
+  FlipCard,
+  isCardShortcut,
   RATING_BUTTONS,
   RatingButtons,
   WordAudio,
   MeasureWordList,
   formatNextReview,
 } from '@/components/flashcard/FlashcardParts'
+import { LevelMeaningBlock } from '@/components/flashcard/LevelMeaning'
 import type { VocabTopic } from '@/types/topic'
 import type { Vocabulary } from '@/types/vocabulary'
 
@@ -37,6 +41,9 @@ const pickNext = (queue: QueueItem[], now: number): QueueItem | undefined => {
 
 /** Some sources number homographs (会1, 点1); never show the digit to learners. */
 const displayHanzi = (hanzi: string) => hanzi.replace(/[0-9]+$/, '')
+
+/** Layout shared by both faces of the card. */
+const FACE = 'flex min-h-72 w-full flex-col items-center justify-center rounded-2xl px-6 py-10 text-center transition-colors'
 
 let queueKeySeq = 0
 
@@ -150,13 +157,13 @@ export const TopicFlashcardPage: React.FC = () => {
     [current, saving, isAuthenticated]
   )
 
-  /* Keyboard: Space/Enter = lật thẻ, 1-4 = chọn mức độ. */
+  /* Keyboard: Space/Enter = lật thẻ (cả hai chiều), 1-4 = chọn mức độ. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!current) return
+      if (!current || !isCardShortcut(e)) return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
-        setRevealed(true)
+        setRevealed((r) => !r)
         return
       }
       if (!revealed) return
@@ -171,42 +178,16 @@ export const TopicFlashcardPage: React.FC = () => {
     current && current.availableAt > now ? Math.ceil((current.availableAt - now) / 60000) : 0
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs">
-        <div>
-          <Link
-            to={backTo}
-            className="mb-1.5 inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-[#C8322B]"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Về chủ đề
-          </Link>
-          <h1 className="text-lg font-bold text-stone-800">
-            {topic?.icon} Flashcard: {topic?.titleVi || 'Chủ đề'}
-          </h1>
-          {hskFilter && <p className="mt-0.5 text-xs font-medium text-stone-500">Chỉ các từ {hskFilter}</p>}
-        </div>
-        <div className="flex items-center gap-2 text-xs font-semibold">
-          <span className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">Đã thuộc {learned}</span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[#C8322B]">
-            <Layers className="h-3.5 w-3.5" />
-            Còn {queue.length} / {total}
-          </span>
-        </div>
-      </header>
-
-      {/* Progress bar */}
-      {total > 0 && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
-          <div
-            className="h-full rounded-full bg-[#C8322B] transition-all duration-300"
-            style={{ width: `${(learned / total) * 100}%` }}
-          />
-        </div>
-      )}
-
+    // A page of its own without the menus (see UserLayout FOCUS_PAGES): only the cards, a way out and the progress.
+    <LessonFrame
+      label={`${topic?.icon ?? ''} ${topic?.titleVi || 'Chủ đề'}${hskFilter ? ` · ${hskFilter}` : ''}`.trim()}
+      progress={total > 0 ? learned / total : undefined}
+      counter={total > 0 ? `Còn ${queue.length}/${total}` : undefined}
+      exitTo={backTo}
+    >
+      <div className="space-y-5">
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
+
 
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-3xl border border-stone-200 bg-white p-16 text-sm text-stone-500">
@@ -230,30 +211,43 @@ export const TopicFlashcardPage: React.FC = () => {
             </p>
           )}
 
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setRevealed(true)}
-            className="my-6 flex min-h-64 w-full cursor-pointer flex-col items-center justify-center rounded-2xl bg-stone-50 px-5 py-8 text-center transition-colors hover:bg-stone-100"
-          >
-            <span
-              className="text-6xl font-bold tracking-wide text-stone-900 sm:text-7xl"
-              style={{ fontFamily: "'Noto Serif SC', serif" }}
-            >
-              {displayHanzi(current.vocab.hanzi)}
-            </span>
-            <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
-            {revealed ? (
+          <FlipCard
+            key={current.key}
+            flipped={revealed}
+            onFlip={() => setRevealed((r) => !r)}
+            className="my-6"
+            frontClassName={`${FACE} bg-stone-50 hover:bg-stone-100`}
+            backClassName={`${FACE} border border-stone-200 bg-white`}
+            front={
               <>
+                <span
+                  className="text-6xl font-bold tracking-wide text-stone-900 sm:text-7xl"
+                  style={{ fontFamily: "'Noto Serif SC', serif" }}
+                >
+                  {displayHanzi(current.vocab.hanzi)}
+                </span>
+                <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
+                <span className="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-stone-400">
+                  <Eye className="h-4 w-4" />
+                  Nhấn để xem phiên âm và nghĩa
+                </span>
+              </>
+            }
+            back={
+              <>
+                <span
+                  className="text-5xl font-bold tracking-wide text-stone-900 sm:text-6xl"
+                  style={{ fontFamily: "'Noto Serif SC', serif" }}
+                >
+                  {displayHanzi(current.vocab.hanzi)}
+                </span>
+                <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
                 <p className="mt-5 text-xl font-semibold text-[#C8322B]">{current.vocab.pinyin}</p>
-                <p className="mt-2 max-w-md text-sm leading-relaxed text-stone-700">
-                  {current.vocab.meaningVi || 'Chưa có nghĩa tiếng Việt'}
-                </p>
-                {current.vocab.partOfSpeech && (
-                  <span className="mt-2 text-xs font-medium italic text-stone-400">
-                    ({current.vocab.partOfSpeech})
-                  </span>
-                )}
+                <LevelMeaningBlock
+                  levelMeaning={current.vocab.levelMeaning}
+                  meaningVi={current.vocab.meaningVi}
+                  partOfSpeech={current.vocab.partOfSpeech}
+                />
                 <MeasureWordList items={current.vocab.measureWords} />
                 <ExampleSentence
                   word={displayHanzi(current.vocab.hanzi)}
@@ -263,13 +257,8 @@ export const TopicFlashcardPage: React.FC = () => {
                   audioUrl={current.vocab.exampleAudioUrl}
                 />
               </>
-            ) : (
-              <span className="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-stone-400">
-                <Eye className="h-4 w-4" />
-                Nhấn để xem phiên âm và nghĩa
-              </span>
-            )}
-          </div>
+            }
+          />
 
           {revealed ? (
             <RatingButtons disabled={saving} onRate={rate} />
@@ -335,7 +324,8 @@ export const TopicFlashcardPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LessonFrame>
   )
 }
 

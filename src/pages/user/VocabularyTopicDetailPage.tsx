@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { HighlightWord } from '@/components/ui/HighlightWord'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -12,6 +13,8 @@ import { AudioButton } from '@/components/ui/AudioButton'
 import { getTopicBySlug, getVocabulariesByTopic } from '@/api/topicApi'
 import { VOCAB_TOPICS, type VocabTopic } from '@/data/vocabTopics'
 import type { Vocabulary } from '@/types/vocabulary'
+import { shortMeaning } from '@/components/flashcard/LevelMeaning'
+import { WordDetailModal } from '@/components/vocabulary/word-detail/WordDetailModal'
 
 const PRIMARY = '#C8322B'
 const PAGE_SIZE = 30
@@ -36,6 +39,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [totalLoaded, setTotalLoaded] = useState(0)
+  const [openWordId, setOpenWordId] = useState<number | null>(null)
 
 
   /* ── Load topic metadata ── */
@@ -293,7 +297,17 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                 {vocabs.map((vocab, index) => (
                   <div
                     key={`${vocab.id}-${index}`}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 hover:border-[#C8322B]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Xem chi tiết ${vocab.hanzi.replace(/[0-9]+$/, '')}`}
+                    onClick={() => setOpenWordId(vocab.id)}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        setOpenWordId(vocab.id)
+                      }
+                    }}
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 hover:border-[#C8322B]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#C8322B]/30"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {/* Number badge */}
@@ -329,7 +343,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                           )}
                         </div>
                         <p className="text-sm text-stone-700 leading-snug truncate">
-                          {vocab.meaningVi || 'Chưa có nghĩa tiếng Việt'}
+                          {shortMeaning(vocab.levelMeaning, vocab.meaningVi) || 'Chưa có nghĩa tiếng Việt'}
                         </p>
                         {vocab.exampleSentence && (
                           <div className="mt-1.5 rounded-xl bg-stone-50 px-3 py-2 text-xs leading-relaxed">
@@ -338,7 +352,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                                 className="text-sm text-stone-800"
                                 style={{ fontFamily: "'Noto Serif SC', serif" }}
                               >
-                                {vocab.exampleSentence}
+                                <HighlightWord sentence={vocab.exampleSentence} word={vocab.hanzi} />
                               </p>
                               <AudioButton
                                 audioUrl={vocab.exampleAudioUrl}
@@ -402,6 +416,8 @@ export const VocabularyTopicDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {openWordId !== null && <WordDetailModal vocabularyId={openWordId} onClose={() => setOpenWordId(null)} />}
     </div>
   )
 }

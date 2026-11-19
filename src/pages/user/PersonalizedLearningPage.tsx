@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowRight, BookOpen, Compass, Library, Loader2, Pencil, RefreshCw, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, Compass, History, Library, Loader2, Pencil, RefreshCw, Sparkles, Target } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useRequireLogin } from '@/router/useRequireLogin'
 import {
@@ -245,6 +245,9 @@ const LearnerPath: React.FC = () => {
             {overview?.assessmentCompleted ? <RefreshCw className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
             {overview?.assessmentCompleted ? 'Làm lại bài test' : 'Làm bài test'}
           </Link>
+          {overview?.assessmentCompleted && (
+            <Link to="/placement/history" className="btn-chunky btn-paper mt-2 w-full"><History className="h-4 w-4" />Xem kết quả và bài làm</Link>
+          )}
           <Link to="/courses" className="mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand"><Library className="h-3.5 w-3.5" />Tra cứu Thư viện giáo trình</Link>
         </section>
       </aside>

@@ -4,6 +4,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { authApi } from '@/api/authApi'
+import { useAppDispatch } from '@/app/hooks'
+import { setCredentials } from '@/app/slices/authSlice'
+import { RegisterOtpStep } from '@/components/auth/RegisterOtpStep'
+import type { AuthResponse } from '@/types/auth'
 import {
   Form,
   FormControl,
@@ -112,6 +116,9 @@ export const RegisterPage: React.FC = () => {
   // The feature a guest was heading to, kept through sign-up and login.
   const origin = (useLocation().state as { from?: { pathname: string; search?: string } } | null)?.from
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  // Set once the code has been emailed: the page then asks for the code instead of the form.
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -139,32 +146,33 @@ export const RegisterPage: React.FC = () => {
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true)
     try {
-      const response = await authApi.register({
+      const email = data.email.trim().toLowerCase()
+      const response = await authApi.sendRegisterOtp({
         username: data.username.trim(),
-        email: data.email.trim().toLowerCase(),
+        email,
         password: data.password,
       })
 
       if (response.success) {
-        showToastMsg('Đăng ký tài khoản thành công! Đang chuyển hướng...', 'success')
-        setTimeout(() => {
-          navigate('/login', {
-            state: { from: origin, message: 'Đăng ký thành công! Hãy đăng nhập để bắt đầu học.' },
-            replace: true,
-          })
-        }, 1500)
+        setPendingEmail(email)
       } else {
-        showToastMsg(response.message || 'Đăng ký thất bại. Vui lòng thử lại.', 'error')
+        showToastMsg(response.message || 'Chưa gửi được mã xác thực. Vui lòng thử lại.', 'error')
       }
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        'Đăng ký không thành công. Tên đăng nhập hoặc email có thể đã tồn tại.'
+        'Chưa gửi được mã xác thực. Tên đăng nhập hoặc email có thể đã tồn tại.'
       showToastMsg(msg, 'error')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // The account now exists and is signed in: go on to where the guest was heading.
+  const onVerified = (session: AuthResponse) => {
+    dispatch(setCredentials(session))
+    navigate(origin?.pathname ? `${origin.pathname}${origin.search ?? ''}` : '/dashboard', { replace: true })
   }
 
   return (
@@ -187,6 +195,10 @@ export const RegisterPage: React.FC = () => {
           <div className="w-8 h-[2px] rounded-full mt-0.5" style={{ backgroundColor: PRIMARY, opacity: 0.25 }} />
         </div>
 
+        {pendingEmail ? (
+          <RegisterOtpStep email={pendingEmail} onVerified={onVerified} onBack={() => setPendingEmail(null)} />
+        ) : (
+        <>
         {/* ── Heading ──────────────────────────────────────── */}
         <div className="text-center mb-6">
           <h1 className="text-xl font-semibold text-slate-800 tracking-tight">
@@ -345,14 +357,16 @@ export const RegisterPage: React.FC = () => {
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <IconSpinner /> Đang đăng ký tài khoản...
+                  <IconSpinner /> Đang gửi mã xác thực...
                 </span>
               ) : (
-                'Đăng ký tài khoản'
+                'Tiếp tục'
               )}
             </button>
           </form>
         </Form>
+        </>
+        )}
 
         {/* ── Divider ──────────────────────────────────────────── */}
         <div className="relative my-6">

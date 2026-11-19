@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { DailyVocabulary } from '@/types/vocabulary'
 import { VOCAB_TOPICS } from '@/data/vocabTopics'
+import { EarlierLevels } from '@/components/flashcard/LevelMeaning'
 
 const PRIMARY = '#C8322B'
 
@@ -193,8 +194,11 @@ export const DailyVocabularyPage: React.FC = () => {
   }
 
   // Phân tích các nghĩa thành danh sách hiển thị
+  // A word of the official syllabus lists the meanings of its level (main first), any other word the dictionary ones.
   const parsedMeanings = selectedWord
-    ? selectedWord.meanings && selectedWord.meanings.length > 0
+    ? selectedWord.levelMeaning
+      ? [selectedWord.levelMeaning.main, ...selectedWord.levelMeaning.secondary]
+      : selectedWord.meanings && selectedWord.meanings.length > 0
       ? selectedWord.meanings
       : selectedWord.meaningVi
       ? selectedWord.meaningVi.split(';').map((s) => s.trim())
@@ -427,6 +431,11 @@ export const DailyVocabularyPage: React.FC = () => {
                     ))
                   )}
                 </div>
+                {selectedWord.levelMeaning && (
+                  <div className="mt-4">
+                    <EarlierLevels levelMeaning={selectedWord.levelMeaning} />
+                  </div>
+                )}
               </div>
 
               {/* Lượng từ đi kèm danh từ (nếu có) */}
@@ -521,9 +530,8 @@ export const DailyVocabularyPage: React.FC = () => {
                     {/* Thông tin nghĩa, Pinyin và ngày tháng bên phải */}
                     <div className="flex-1 ml-3.5 text-left min-w-0">
                       <p className="text-xs font-semibold text-stone-800 truncate leading-snug">
-                        {item.meanings && item.meanings[0]
-                          ? item.meanings[0]
-                          : item.meaningVi}
+                        {item.levelMeaning?.main ||
+                          (item.meanings && item.meanings[0] ? item.meanings[0] : item.meaningVi)}
                       </p>
                       <p className="text-[11px] text-stone-400 mt-0.5 truncate font-mono">
                         {item.pinyin} ·{' '}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { HighlightWord } from '@/components/ui/HighlightWord'
 import { useSearchParams } from 'react-router-dom'
 import {
   Search,
@@ -22,6 +23,8 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AudioButton } from '@/components/ui/AudioButton'
+import { EarlierLevels, shortMeaning } from '@/components/flashcard/LevelMeaning'
+import { WordDetailModal } from '@/components/vocabulary/word-detail/WordDetailModal'
 
 const PRIMARY = '#C8322B'
 const PAGE_SIZE = 20
@@ -37,6 +40,7 @@ export const VocabularyPage: React.FC = () => {
   // A link can open this page on a word, such as "Tra trong từ điển" on the daily word.
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('q') ?? '')
   const [selectedHsk, setSelectedHsk] = useState<string>('all')
+  const [openWordId, setOpenWordId] = useState<number | null>(null)
   const [page, setPage] = useState<number>(0)
   const [hasMore, setHasMore] = useState<boolean>(true)
   const [attempt, setAttempt] = useState<number>(0)
@@ -266,7 +270,17 @@ export const VocabularyPage: React.FC = () => {
               return (
                 <Card
                   key={item.id}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-[#C8322B]/40 hover:shadow-md transition-all group flex flex-col justify-between"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Xem chi tiết ${item.hanzi}`}
+                  onClick={() => setOpenWordId(item.id)}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault()
+                      setOpenWordId(item.id)
+                    }
+                  }}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-[#C8322B]/40 hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#C8322B]/30"
                 >
                   <CardContent className="p-0 space-y-3">
                     {/* Dòng trên: Chữ Hán lớn & Badge HSK */}
@@ -314,8 +328,9 @@ export const VocabularyPage: React.FC = () => {
                     {/* Nghĩa tiếng Việt */}
                     <div className="pt-2 border-t border-slate-100">
                       <p className="text-sm font-medium text-slate-800 leading-snug">
-                        {item.meaningVi || <span className="font-normal italic text-slate-400">Chưa có nghĩa tiếng Việt</span>}
+                        {shortMeaning(item.levelMeaning, item.meaningVi) || <span className="font-normal italic text-slate-400">Chưa có nghĩa tiếng Việt</span>}
                       </p>
+                      <EarlierLevels levelMeaning={item.levelMeaning} compact />
                       {item.meaningEn && (
                         <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
                           {item.meaningEn}
@@ -327,7 +342,7 @@ export const VocabularyPage: React.FC = () => {
                     {primaryExample && (
                       <div className="pt-2 border-t border-dashed border-slate-100 space-y-1">
                         <p className="font-chinese text-slate-600 line-clamp-2 italic text-xs font-medium">
-                          “{primaryExample.sentence}”
+                          “<HighlightWord sentence={primaryExample.sentence} word={item.hanzi} />”
                         </p>
                         {primaryExample.pinyin && (
                           <p className="text-[11px] text-slate-400 line-clamp-1 italic">
@@ -383,6 +398,8 @@ export const VocabularyPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {openWordId !== null && <WordDetailModal vocabularyId={openWordId} onClose={() => setOpenWordId(null)} />}
     </div>
   )
 }
