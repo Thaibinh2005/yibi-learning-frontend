@@ -13,6 +13,7 @@ import {
   LogOut,
   Map as MapIcon,
   Menu,
+  PenLine,
   X,
   Lightbulb,
 } from 'lucide-react'
@@ -32,19 +33,25 @@ interface NavItem {
 
 const startsWith = (...prefixes: string[]) => (pathname: string) => prefixes.some((prefix) => pathname.startsWith(prefix))
 
-const NAV_ITEMS: NavItem[] = [
+const isWritingPath = startsWith('/vocabulary/writing')
+
+const PRIMARY_NAV: NavItem[] = [
   { label: 'Trang chủ', path: '/dashboard', icon: House, isActive: (pathname) => pathname === '/dashboard' || pathname === '/' },
   { label: 'Lộ trình', path: '/learning-path', icon: MapIcon, isActive: startsWith('/learning-path', '/placement', '/onboarding', '/practice') },
   { label: 'Flashcard', path: '/flashcards', icon: Layers, isActive: startsWith('/flashcards') },
   { label: 'Nghe & Nói', path: '/listening', icon: Headphones, isActive: startsWith('/listening') },
-  { label: 'Thi thử', path: '/exams', icon: FileCheck, isActive: startsWith('/exams') },
 ]
+
+const WRITING_ITEM: NavItem = { label: 'Luyện viết', path: '/vocabulary/writing', icon: PenLine, isActive: isWritingPath }
+const EXAM_ITEM: NavItem = { label: 'Thi thử', path: '/exams', icon: FileCheck, isActive: startsWith('/exams') }
+
+// The phone bar keeps its six places; Luyện viết is reached from the drawer.
+const NAV_ITEMS: NavItem[] = [...PRIMARY_NAV, EXAM_ITEM]
 
 const VOCABULARY_SUB_ITEMS = [
   { label: 'Từ vựng mỗi ngày', path: '/vocabulary/daily' },
   { label: 'Tra cứu từ vựng', path: '/vocabulary/search' },
   { label: 'Từ vựng theo chủ đề', path: '/vocabulary/topic' },
-  { label: 'Viết chữ', path: '/vocabulary/writing' },
 ]
 
 /** These pages take the whole screen, so nothing competes with the question being answered or the card being studied. */
@@ -66,7 +73,7 @@ export const UserLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const isInsideVocab = location.pathname.startsWith('/vocabulary')
+  const isInsideVocab = location.pathname.startsWith('/vocabulary') && !isWritingPath(location.pathname)
   const [isVocabOpen, setIsVocabOpen] = useState(isInsideVocab)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const focused = FOCUS_PAGES.test(location.pathname)
@@ -135,6 +142,7 @@ export const UserLayout: React.FC = () => {
     if (pathname.startsWith('/flashcards/decks')) return 'Bộ từ vựng của tôi'
     if (pathname.startsWith('/listening')) return 'Nghe chép & Nói nhại'
     if (pathname === '/tips') return 'Mẹo học'
+    if (isWritingPath(pathname)) return 'Luyện viết'
     if (pathname === '/vocabulary') return 'Kho từ vựng HSK'
     if (pathname.startsWith('/vocabulary')) return 'Từ vựng'
     if (pathname === '/learning-path/practice') return 'Luyện tập'
@@ -149,6 +157,16 @@ export const UserLayout: React.FC = () => {
       return `Giáo trình HSK ${level === 7 ? '7–9' : level}`
     }
     return NAV_ITEMS.find((item) => item.isActive(pathname))?.label ?? 'Yibi'
+  }
+
+  const renderNavLink = ({ label, path, icon: Icon, isActive }: NavItem) => {
+    const active = isActive(location.pathname)
+    return (
+      <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={navRow(active)}>
+        <Icon className="h-5 w-5 shrink-0" />
+        {label}
+      </Link>
+    )
   }
 
   if (focused) {
@@ -179,15 +197,7 @@ export const UserLayout: React.FC = () => {
         </div>
 
         <nav className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 pb-3 [scrollbar-width:thin]" aria-label="Điều hướng chính">
-          {NAV_ITEMS.map(({ label, path, icon: Icon, isActive }) => {
-            const active = isActive(location.pathname)
-            return (
-              <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={navRow(active)}>
-                <Icon className="h-5 w-5 shrink-0" />
-                {label}
-              </Link>
-            )
-          })}
+          {PRIMARY_NAV.map(renderNavLink)}
 
           <button type="button" aria-expanded={isVocabOpen} onClick={() => setIsVocabOpen((value) => !value)} className={`w-full justify-between ${navRow(isInsideVocab)}`}>
             <span className="flex items-center gap-3"><BookMarked className="h-5 w-5 shrink-0" />Từ vựng</span>
@@ -205,6 +215,8 @@ export const UserLayout: React.FC = () => {
               })}
             </div>
           )}
+
+          {[WRITING_ITEM, EXAM_ITEM].map(renderNavLink)}
 
           <Link to="/courses" aria-current={location.pathname === '/courses' ? 'page' : undefined} className={navRow(location.pathname === '/courses')}>
             <Library className="h-5 w-5 shrink-0" />
@@ -296,7 +308,7 @@ export const UserLayout: React.FC = () => {
 
       {/* The sidebar is off-screen on a phone, so the main places stay under the thumb. */}
       <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t-2 border-slate-200/70 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
-        {[...NAV_ITEMS, { label: 'Từ vựng', path: '/vocabulary/daily', icon: BookMarked, isActive: startsWith('/vocabulary') }].map(({ label, path, icon: Icon, isActive }) => {
+        {[...NAV_ITEMS, { label: 'Từ vựng', path: '/vocabulary/daily', icon: BookMarked, isActive: (pathname: string) => pathname.startsWith('/vocabulary') && !isWritingPath(pathname) }].map(({ label, path, icon: Icon, isActive }) => {
           const active = isActive(location.pathname)
           return (
             <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${active ? 'text-brand' : 'text-slate-500'}`}>

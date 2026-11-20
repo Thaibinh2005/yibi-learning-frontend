@@ -2,7 +2,7 @@
 export interface HanziSyllable {
   hanzi: string
   pinyin: string
-  /** "1" to "6", "7-9", or "1-2" for the list shared by levels 1 and 2. */
+  /** "1" to "6", or "7-9". */
   levelCode: string
 }
 
