@@ -12,7 +12,7 @@ interface Props {
   onPickChar: (hanzi: string, pinyin?: string) => void
 }
 
-const LEVELS = ['1-2', '3', '4', '5', '6', '7-9']
+const LEVELS = ['1', '2', '3', '4', '5', '6', '7-9']
 const levelLabel = (code: string) => `HSK ${code.replace('-', '–')}`
 
 type Status = 'loading' | 'error' | 'ready'
@@ -20,7 +20,7 @@ type Status = 'loading' | 'error' | 'ready'
 /** The HSK writing characters by level, the ones due for review, and the stroke-order rules. */
 export const WritePanel: React.FC<Props> = ({ selected, refreshKey, onPickChar }) => {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
-  const [level, setLevel] = useState('1-2')
+  const [level, setLevel] = useState('1')
   const [status, setStatus] = useState<Status>('loading')
   const [chars, setChars] = useState<HanziSyllable[]>([])
   const [due, setDue] = useState<WritingCard[]>([])
