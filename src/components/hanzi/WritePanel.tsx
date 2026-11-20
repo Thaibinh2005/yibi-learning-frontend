@@ -116,7 +116,7 @@ export const WritePanel: React.FC<Props> = ({ selected, refreshKey, onPickChar }
                   }`}
                 >
                   <span className="font-chinese text-3xl leading-tight text-slate-900">{item.hanzi}</span>
-                  <span className="text-xs font-bold leading-snug text-slate-500">{item.pinyin}</span>
+                  <span className="font-pinyin text-xs font-bold leading-snug text-slate-500">{item.pinyin}</span>
                 </button>
               </li>
             ))}

@@ -204,7 +204,7 @@ export const SpeakLine: React.FC<{
                   title={spoken ? 'Nghe chữ này' : undefined}
                   className={`flex flex-col items-center rounded-lg px-0.5 transition-colors duration-300 ${spoken ? 'hover:bg-slate-100' : 'cursor-default'} ${mark === 'bad' ? 'bg-rose-50' : ''}`}
                 >
-                  <span className={`min-h-4 text-xs font-semibold ${mark === 'ok' ? 'text-emerald-600' : mark === 'bad' ? 'text-rose-600' : 'text-slate-500'}`}>{c.pinyin}</span>
+                  <span className={`font-pinyin min-h-4 text-xs font-semibold ${mark === 'ok' ? 'text-emerald-600' : mark === 'bad' ? 'text-rose-600' : 'text-slate-500'}`}>{c.pinyin}</span>
                   <span className={`font-chinese text-3xl font-bold leading-tight ${mark === 'ok' ? 'text-emerald-600' : mark === 'bad' ? 'text-rose-600 underline decoration-2 underline-offset-4' : spoken ? 'text-slate-900' : 'text-slate-400'}`} data-mark={mark}>{c.han}</span>
                 </button>
               )

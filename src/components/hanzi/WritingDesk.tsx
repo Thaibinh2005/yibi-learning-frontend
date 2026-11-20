@@ -95,7 +95,7 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
     <div className="space-y-4">
       <div className="flex items-baseline gap-2">
         <span className="font-chinese text-4xl leading-tight text-slate-900">{target.char}</span>
-        {target.pinyin && <span className="text-xl font-extrabold leading-snug text-brand">{target.pinyin}</span>}
+        {target.pinyin && <span className="font-pinyin text-xl font-extrabold leading-snug text-brand">{target.pinyin}</span>}
         <AudioButton text={target.char} size="lg" title={`Nghe chữ ${target.char}`} className="shrink-0" />
         <span className="min-w-0 flex-1 truncate text-sm text-slate-500">{target.caption}</span>
       </div>

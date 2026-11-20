@@ -218,7 +218,7 @@ const Review: React.FC = () => {
                   {displayHanzi(current.card.hanzi)}
                 </span>
                 <WordAudio hanzi={displayHanzi(current.card.hanzi)} audioUrl={current.card.audioUrl} />
-                <p className="mt-4 text-lg font-semibold text-[#C8322B]">{current.card.pinyin}</p>
+                <p className="font-pinyin mt-4 text-lg font-semibold text-[#C8322B]">{current.card.pinyin}</p>
                 <LevelMeaningBlock levelMeaning={current.card.levelMeaning} meaningVi={current.card.meaningVi} partOfSpeech={current.card.partOfSpeech} />
                 <MeasureWordList items={current.card.measureWords} />
                 <ExampleSentence

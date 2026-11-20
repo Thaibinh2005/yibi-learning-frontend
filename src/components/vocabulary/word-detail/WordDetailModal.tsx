@@ -244,7 +244,7 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
                     </h2>
                     <AudioButton audioUrl={vocab.audioUrl} text={word} size="lg" title="Nghe phát âm" />
                   </div>
-                  <p className="mt-0.5 text-lg font-semibold text-[#C8322B]">{pinyin}</p>
+                  <p className="font-pinyin mt-0.5 text-lg font-semibold text-[#C8322B]">{pinyin}</p>
                   <p className="mt-0.5 text-base font-medium text-slate-800">{shortMeaning(lm, vocab.meaningVi?.split(/[;；]/)[0])}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                     {partOfSpeech && <span className="italic text-slate-500">({partOfSpeech})</span>}

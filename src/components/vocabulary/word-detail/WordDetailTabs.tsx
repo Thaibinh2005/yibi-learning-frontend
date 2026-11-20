@@ -52,7 +52,7 @@ const ExampleCard: React.FC<{ word: string; example: Example; label?: React.Reac
       </p>
       <AudioButton audioUrl={example.audioUrl} text={example.zh} size="sm" title="Nghe câu ví dụ" className="flex-shrink-0" />
     </div>
-    {example.pinyin && <p className="mt-0.5 text-sm text-slate-500">{example.pinyin}</p>}
+    {example.pinyin && <p className="font-pinyin mt-0.5 text-sm text-slate-500">{example.pinyin}</p>}
     <p className="mt-0.5 text-sm text-slate-700">{example.vi}</p>
     {label && <div className="mt-2">{label}</div>}
   </div>
@@ -400,7 +400,7 @@ export const HanziTab: React.FC<{ vocab: Vocabulary; details: WordDetails | null
               <dt className="text-slate-500">Là từ</dt>
               <dd>
                 <button type="button" onClick={() => onOpenWord(current.vocabularyId!)} className="text-left hover:underline">
-                  <span className="font-medium text-[#C8322B]">{current.pinyin}</span>
+                  <span className="font-pinyin font-medium text-[#C8322B]">{current.pinyin}</span>
                   {current.meaning && <span className="text-slate-700"> – {current.meaning}</span>}
                   {current.levelCode && <span className="ml-1 text-xs text-slate-400">(HSK {current.levelCode})</span>}
                 </button>
@@ -437,7 +437,7 @@ export const HskkTab: React.FC<{ vocab: Vocabulary; details: WordDetails | null 
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
               <p className="font-chinese text-lg text-slate-900">{item.zh}</p>
-              {item.pinyin && <p className="text-sm text-slate-500">{item.pinyin}</p>}
+              {item.pinyin && <p className="font-pinyin text-sm text-slate-500">{item.pinyin}</p>}
               {item.vi && <p className="text-sm text-slate-600">{item.vi}</p>}
             </div>
             <AudioButton audioUrl={item.audioUrl} text={item.zh} size="md" title="Nghe mẫu" className="flex-shrink-0" />

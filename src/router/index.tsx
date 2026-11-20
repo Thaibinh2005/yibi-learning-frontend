@@ -33,6 +33,10 @@ import { DashboardGate } from './DashboardGate'
 import { HskkPage } from '@/pages/user/HskkPage'
 import { ForgotPasswordPage, GoogleCallbackPage, ResetPasswordPage } from '@/pages/auth/AccountRecoveryPages'
 import { PrivateRoute } from './PrivateRoute'
+import { ListeningPage } from '@/pages/user/listening/ListeningPage'
+import { ListeningCategoryPage } from '@/pages/user/listening/ListeningCategoryPage'
+import { VideoEditorPage } from '@/pages/user/listening/VideoEditorPage'
+import { VideoPracticePage } from '@/pages/user/listening/VideoPracticePage'
 import { AdminRoute } from './AdminRoute'
 
 const OldPracticeRedirect = () => {
@@ -99,11 +103,16 @@ export const router = createBrowserRouter([
           { path: '/flashcards/decks', element: <DecksPage /> },
           { path: '/flashcards/decks/:deckId', element: <DeckDetailPage /> },
           { path: '/exams', element: <ExamPage /> },
+          { path: '/listening', element: <ListeningPage /> },
+          { path: '/listening/c/:slug', element: <ListeningCategoryPage /> },
         ],
       },
       {
         element: <PrivateRoute />,
         children: [
+          // ── Opening a listening lesson needs an account (full screen) ──
+          { path: '/listening/:id/edit', element: <VideoEditorPage /> },
+          { path: '/listening/:id', element: <VideoPracticePage /> },
           {
             element: <OnboardingGate />,
             children: [

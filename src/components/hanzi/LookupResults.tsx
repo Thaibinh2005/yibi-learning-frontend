@@ -115,7 +115,7 @@ export const LookupResults: React.FC<Props> = ({ query, activeChar, onPickChar }
                   >
                     <span className="font-chinese text-4xl leading-tight text-slate-900">{word.hanzi}</span>
                     <span className="min-w-0">
-                      {word.pinyin && <span className="block font-extrabold leading-snug text-brand">{word.pinyin}</span>}
+                      {word.pinyin && <span className="font-pinyin block font-extrabold leading-snug text-brand">{word.pinyin}</span>}
                       <span className="block truncate text-sm leading-snug text-slate-600">{word.meaning}</span>
                     </span>
                   </button>
@@ -137,7 +137,7 @@ export const LookupResults: React.FC<Props> = ({ query, activeChar, onPickChar }
                             }`}
                           >
                             <span className="font-chinese text-3xl leading-tight text-slate-900">{char}</span>
-                            {syllables.length === chars.length && <span className="text-xs font-bold leading-snug text-slate-500">{syllables[index]}</span>}
+                            {syllables.length === chars.length && <span className="font-pinyin text-xs font-bold leading-snug text-slate-500">{syllables[index]}</span>}
                           </button>
                         </li>
                       ))}

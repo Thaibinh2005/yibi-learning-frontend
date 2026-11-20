@@ -8,6 +8,7 @@ import {
   Flame,
   House,
   Layers,
+  Headphones,
   Library,
   LogOut,
   Map as MapIcon,
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Trang chủ', path: '/dashboard', icon: House, isActive: (pathname) => pathname === '/dashboard' || pathname === '/' },
   { label: 'Lộ trình', path: '/learning-path', icon: MapIcon, isActive: startsWith('/learning-path', '/placement', '/onboarding', '/practice') },
   { label: 'Flashcard', path: '/flashcards', icon: Layers, isActive: startsWith('/flashcards') },
+  { label: 'Nghe & Nói', path: '/listening', icon: Headphones, isActive: startsWith('/listening') },
   { label: 'Thi thử', path: '/exams', icon: FileCheck, isActive: startsWith('/exams') },
 ]
 
@@ -46,7 +48,7 @@ const VOCABULARY_SUB_ITEMS = [
 ]
 
 /** These pages take the whole screen, so nothing competes with the question being answered or the card being studied. */
-const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards)/
+const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards|listening\/\d+)/
 
 const navRow = (active: boolean) =>
   `flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-[15px] font-bold transition-colors ${
@@ -131,6 +133,7 @@ export const UserLayout: React.FC = () => {
     const sub = VOCABULARY_SUB_ITEMS.find((item) => item.path === pathname)
     if (sub) return sub.label
     if (pathname.startsWith('/flashcards/decks')) return 'Bộ từ vựng của tôi'
+    if (pathname.startsWith('/listening')) return 'Nghe chép & Nói nhại'
     if (pathname === '/tips') return 'Mẹo học'
     if (pathname === '/vocabulary') return 'Kho từ vựng HSK'
     if (pathname.startsWith('/vocabulary')) return 'Từ vựng'
@@ -292,7 +295,7 @@ export const UserLayout: React.FC = () => {
       </div>
 
       {/* The sidebar is off-screen on a phone, so the main places stay under the thumb. */}
-      <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-2 border-slate-200/70 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t-2 border-slate-200/70 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {[...NAV_ITEMS, { label: 'Từ vựng', path: '/vocabulary/daily', icon: BookMarked, isActive: startsWith('/vocabulary') }].map(({ label, path, icon: Icon, isActive }) => {
           const active = isActive(location.pathname)
           return (

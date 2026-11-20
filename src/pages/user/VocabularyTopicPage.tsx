@@ -368,7 +368,7 @@ export const VocabularyTopicPage: React.FC = () => {
                                 {sw.hanzi}
                               </span>
                               {sw.pinyin && (
-                                <span className="text-stone-400 text-[11px]">
+                                <span className="font-pinyin text-stone-400 text-[11px]">
                                   ({sw.pinyin})
                                 </span>
                               )}

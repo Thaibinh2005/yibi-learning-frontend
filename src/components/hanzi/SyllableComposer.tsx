@@ -27,7 +27,7 @@ const Option: React.FC<{ on: boolean; onClick: () => void; children: React.React
     aria-pressed={on}
     aria-label={label}
     onClick={onClick}
-    className={`h-11 min-w-11 rounded-2xl border-2 px-2.5 text-base font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 ${
+    className={`font-pinyin h-11 min-w-11 rounded-2xl border-2 px-2.5 text-base font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 ${
       on ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300'
     }`}
   >
@@ -90,7 +90,7 @@ export const SyllableComposer: React.FC<Props> = ({ selected, onPickChar }) => {
                   tone === option.tone ? `${TONE_STYLE[option.tone].fill} border-transparent text-white` : `bg-white ${TONE_STYLE[option.tone].text} border-slate-200 hover:border-slate-300`
                 }`}
               >
-                <span className="text-lg font-extrabold">{option.mark}</span>
+                <span className="font-pinyin text-lg font-extrabold">{option.mark}</span>
                 <span className="text-xs font-semibold">{option.label}</span>
               </button>
             ))}
@@ -100,8 +100,8 @@ export const SyllableComposer: React.FC<Props> = ({ selected, onPickChar }) => {
 
       <section className="card-soft p-5" aria-live="polite">
         <p className="flex flex-wrap items-center justify-center gap-2 text-lg font-extrabold text-slate-500">
-          <b className="text-slate-900">{initial || '∅'}</b>+<b className="text-slate-900">{final}</b>+<span className={toneStyle.text}>{tone === 5 ? 'thanh nhẹ' : `thanh ${tone}`}</span>=
-          <span className={`text-4xl leading-tight ${toneStyle.text}`}>{syllable}</span>
+          <b className="font-pinyin text-slate-900">{initial || '∅'}</b>+<b className="font-pinyin text-slate-900">{final}</b>+<span className={toneStyle.text}>{tone === 5 ? 'thanh nhẹ' : `thanh ${tone}`}</span>=
+          <span className={`font-pinyin text-4xl leading-tight ${toneStyle.text}`}>{syllable}</span>
         </p>
 
         {status === 'loading' && (

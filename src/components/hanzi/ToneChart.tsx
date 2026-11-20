@@ -13,7 +13,7 @@ export const ToneChart: React.FC<{ onPickChar?: (hanzi: string, pinyin?: string)
         const style = TONE_STYLE[tone.tone]
         return (
           <article key={tone.tone} className={`rounded-3xl border-2 p-4 ${style.tint}`}>
-            <div className={`text-3xl font-extrabold leading-tight ${style.text}`}>{tone.mark}</div>
+            <div className={`font-pinyin text-3xl font-extrabold leading-tight ${style.text}`}>{tone.mark}</div>
             <svg viewBox="0 0 120 100" className="my-2 block h-auto w-full" role="img" aria-label={`${tone.name}: đường cao độ trên thang 1 đến 5`}>
               <g className="stroke-current text-slate-300" strokeWidth="1">
                 {LEVELS.map((level) => <path key={level} d={`M14 ${90 - (level - 1) * 20}H106`} />)}
@@ -28,7 +28,7 @@ export const ToneChart: React.FC<{ onPickChar?: (hanzi: string, pinyin?: string)
               className={`mt-2 flex items-baseline gap-2 rounded-xl font-bold leading-snug ${style.text} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300`}
               aria-label={`Viết chữ ${tone.example.hanzi}, ${tone.example.pinyin}, ${tone.example.meaning}`}
             >
-              <span>{tone.example.pinyin}</span>
+              <span className="font-pinyin">{tone.example.pinyin}</span>
               <span className="font-chinese text-2xl text-slate-900">{tone.example.hanzi}</span>
               <span className="text-sm font-medium text-slate-500">{tone.example.meaning}</span>
             </button>

@@ -345,7 +345,7 @@ export const VocabularyPage: React.FC = () => {
                           “<HighlightWord sentence={primaryExample.sentence} word={item.hanzi} />”
                         </p>
                         {primaryExample.pinyin && (
-                          <p className="text-[11px] text-slate-400 line-clamp-1 italic">
+                          <p className="font-pinyin text-[11px] text-slate-400 line-clamp-1 italic">
                             {primaryExample.pinyin}
                           </p>
                         )}

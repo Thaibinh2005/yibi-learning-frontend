@@ -77,7 +77,7 @@ export const RadicalGrid: React.FC<Props> = ({ selected, learned, onSelect }) =>
                       }`}
                     >
                       <span className="font-chinese text-5xl leading-tight text-slate-900">{radical.char}</span>
-                      <span className="mt-0.5 font-bold leading-snug text-brand">{radical.pinyin}</span>
+                      <span className="font-pinyin mt-0.5 font-bold leading-snug text-brand">{radical.pinyin}</span>
                       <span className="text-sm font-bold leading-snug text-slate-800">{radical.hanViet}</span>
                       <span className="text-xs leading-snug text-slate-500">{radical.meaning}</span>
                       {isLearned ? (

@@ -13,7 +13,7 @@ const Groups: React.FC<{ groups: SoundGroup[] }> = ({ groups }) => (
         <ul className="flex flex-wrap gap-2">
           {group.sounds.map((sound) => (
             <li key={sound.letter} className="flex min-w-16 flex-col items-center rounded-2xl border-2 border-slate-200 bg-white px-3 py-2">
-              <span className="text-xl font-extrabold leading-snug text-slate-900">{sound.letter}</span>
+              <span className="font-pinyin text-xl font-extrabold leading-snug text-slate-900">{sound.letter}</span>
               {sound.like && <span className="text-xs leading-snug text-slate-500">≈ {sound.like}</span>}
             </li>
           ))}
@@ -42,7 +42,7 @@ export const FinalsPanel: React.FC = () => (
           <article key={rule.id} className="card-soft space-y-3 p-5">
             <h4 className="font-extrabold leading-snug text-slate-900">{rule.title}</h4>
             <ul className="flex flex-wrap gap-2">
-              {rule.chips.map((chip) => <li key={chip} className="rounded-xl bg-slate-100 px-3 py-1 text-sm font-bold leading-snug text-slate-700">{chip}</li>)}
+              {rule.chips.map((chip) => <li key={chip} className="font-pinyin rounded-xl bg-slate-100 px-3 py-1 text-sm font-bold leading-snug text-slate-700">{chip}</li>)}
             </ul>
             {rule.note && <p className="text-sm leading-relaxed text-slate-500">{rule.note}</p>}
           </article>

@@ -11,7 +11,7 @@ const Syllable: React.FC<{ pair: Pair }> = ({ pair: [hanzi, pinyin] }) => {
   return (
     <span className={`inline-flex min-w-16 flex-col items-center rounded-2xl border px-3 py-2 ${style.tint}`}>
       <span className="font-chinese text-3xl leading-tight text-slate-900">{hanzi}</span>
-      <span className={`font-extrabold leading-snug ${style.text}`}>{pinyin}</span>
+      <span className={`font-pinyin font-extrabold leading-snug ${style.text}`}>{pinyin}</span>
     </span>
   )
 }
@@ -34,7 +34,7 @@ export const SandhiRules: React.FC = () => {
         />
         <span className="flex flex-wrap items-center gap-1.5" aria-live="polite">
           {typed.trim() ? read.map((syllable, i) => (
-            <span key={i} className={`rounded-xl border px-2.5 py-1 text-sm font-extrabold leading-snug ${TONE_STYLE[toneOf(syllable)].tint} ${TONE_STYLE[toneOf(syllable)].text}`}>{syllable}</span>
+            <span key={i} className={`font-pinyin rounded-xl border px-2.5 py-1 text-sm font-extrabold leading-snug ${TONE_STYLE[toneOf(syllable)].tint} ${TONE_STYLE[toneOf(syllable)].text}`}>{syllable}</span>
           )) : null}
         </span>
       </label>

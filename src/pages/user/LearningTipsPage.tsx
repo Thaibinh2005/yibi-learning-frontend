@@ -90,7 +90,7 @@ export const LearningTipsPage: React.FC = () => {
               {rows.map(([hanzi, pinyin, note]) => (
                 <li key={hanzi} className="flex items-baseline gap-3">
                   <span className="font-chinese shrink-0 text-xl font-bold text-slate-900">{hanzi}</span>
-                  <span className="shrink-0 text-sm font-semibold text-brand">{pinyin}</span>
+                  <span className="font-pinyin shrink-0 text-sm font-semibold text-brand">{pinyin}</span>
                   <span className="min-w-0 text-sm text-slate-600">{note}</span>
                 </li>
               ))}

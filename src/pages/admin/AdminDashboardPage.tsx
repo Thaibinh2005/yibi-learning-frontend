@@ -4,6 +4,8 @@ import {
   Sparkles,
   Database,
   BarChart3,
+  Captions,
+  Library,
   Search,
   CheckCircle2,
   AlertCircle,
@@ -46,6 +48,8 @@ import type {
 import { AudioButton } from '@/components/ui/AudioButton'
 import { AiGeneratorPanel } from '@/components/admin/AiGeneratorPanel'
 import { PoolCoveragePanel } from '@/components/admin/PoolCoveragePanel'
+import { VideoTranscriptPanel } from '@/components/admin/VideoTranscriptPanel'
+import { ListeningLibraryPanel } from '@/components/admin/ListeningLibraryPanel'
 import { useAppSelector } from '@/app/hooks'
 
 const HSK_LEVELS = ['1', '2', '3', '4', '5', '6', '7-9']
@@ -60,7 +64,7 @@ const QUESTION_TYPES = [
 
 export const AdminDashboardPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth)
-  const [activeTab, setActiveTab] = useState<'generator' | 'repository' | 'coverage' | 'analytics'>('generator')
+  const [activeTab, setActiveTab] = useState<'generator' | 'repository' | 'coverage' | 'analytics' | 'videos' | 'library'>('generator')
   const [genSource, setGenSource] = useState<'rules' | 'ai'>('rules')
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -351,7 +355,7 @@ export const AdminDashboardPage: React.FC = () => {
 
       {/* ── Navigation Tabs ──────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-8 overflow-x-auto whitespace-nowrap">
           <button
             onClick={() => setActiveTab('generator')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
@@ -403,6 +407,30 @@ export const AdminDashboardPage: React.FC = () => {
           >
             <BarChart3 className="w-4 h-4" />
             <span>Báo cáo & Ma trận chất lượng</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'videos'
+                ? 'border-[#C8322B] text-[#C8322B]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Captions className="w-4 h-4" />
+            <span>Phụ đề video</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('library')}
+            className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'library'
+                ? 'border-[#C8322B] text-[#C8322B]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Library className="w-4 h-4" />
+            <span>Thư viện video</span>
           </button>
         </div>
       </div>
@@ -763,6 +791,10 @@ export const AdminDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'coverage' && <PoolCoveragePanel />}
+
+        {activeTab === 'videos' && <VideoTranscriptPanel />}
+
+        {activeTab === 'library' && <ListeningLibraryPanel />}
 
         {/* ======================================================== */}
         {/* TAB 2: QUESTION BANK REPOSITORY                          */}

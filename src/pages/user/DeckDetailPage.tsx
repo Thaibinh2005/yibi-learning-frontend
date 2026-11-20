@@ -470,7 +470,7 @@ const WordRow: React.FC<{ word: DeckWord; checked: boolean; onToggle: () => void
           <span className="font-chinese text-xl font-bold text-slate-900" style={{ fontFamily: "'Noto Serif SC', serif" }}>
             {displayHanzi(word.hanzi)}
           </span>
-          {word.pinyin && <span className="text-sm font-medium text-[#C8322B]">{word.pinyin}</span>}
+          {word.pinyin && <span className="font-pinyin text-sm font-medium text-[#C8322B]">{word.pinyin}</span>}
           {word.levelCode && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">HSK {word.levelCode}</span>}
         </div>
         {word.meaning && <p className="mt-0.5 text-sm text-slate-600">{word.meaning}</p>}
@@ -570,7 +570,7 @@ const AddWordsPanel: React.FC<{ members: Set<number>; busy: boolean; onAdd: (ids
                       <span className="font-chinese text-lg font-bold text-slate-900" style={{ fontFamily: "'Noto Serif SC', serif" }}>
                         {displayHanzi(v.hanzi)}
                       </span>
-                      <span className="text-sm text-[#C8322B]">{v.pinyin}</span>
+                      <span className="font-pinyin text-sm text-[#C8322B]">{v.pinyin}</span>
                       {v.levelCode && <span className="text-[11px] font-semibold text-slate-500">HSK {v.levelCode}</span>}
                     </div>
                     <p className="truncate text-sm text-slate-600">{shortMeaning(v.levelMeaning, v.meaningVi)}</p>

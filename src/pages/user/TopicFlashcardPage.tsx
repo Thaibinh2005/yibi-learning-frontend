@@ -242,7 +242,7 @@ export const TopicFlashcardPage: React.FC = () => {
                   {displayHanzi(current.vocab.hanzi)}
                 </span>
                 <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
-                <p className="mt-5 text-xl font-semibold text-[#C8322B]">{current.vocab.pinyin}</p>
+                <p className="font-pinyin mt-5 text-xl font-semibold text-[#C8322B]">{current.vocab.pinyin}</p>
                 <LevelMeaningBlock
                   levelMeaning={current.vocab.levelMeaning}
                   meaningVi={current.vocab.meaningVi}

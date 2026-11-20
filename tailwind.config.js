@@ -19,6 +19,8 @@ export default {
       colors: {
         // Warm greys on a paper background; every existing slate class follows.
         slate: colors.stone,
+        // Headings: the title colour of the design reference.
+        ink: "oklch(0.21 0.034 264.665)",
         brand: { DEFAULT: "#C8322B", dark: "#A32620", edge: "#8C1F1A" },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -63,8 +65,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Be Vietnam Pro", "system-ui", "sans-serif"],
-        // Vietnamese and pinyin in the text face; only Chinese falls through to the serif.
+        sans: ["Nunito", "system-ui", "sans-serif"],
+        // Pinyin keeps Be Vietnam Pro, whose tone marks sit well; Chinese falls through to the serif.
+        pinyin: ["Be Vietnam Pro", "system-ui", "sans-serif"],
         chinese: ["Be Vietnam Pro", "Noto Serif SC", "PingFang SC", "Microsoft YaHei", "sans-serif"],
       },
     },

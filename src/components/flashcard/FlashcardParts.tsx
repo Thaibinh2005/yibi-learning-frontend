@@ -129,7 +129,7 @@ export const ExampleSentence: React.FC<{
       <p className="font-chinese text-xl leading-relaxed text-stone-900">
         <HighlightWord sentence={sentence} word={word} />
       </p>
-      {pinyin && <p className="mt-1 text-sm text-stone-500">{pinyin}</p>}
+      {pinyin && <p className="font-pinyin mt-1 text-sm text-stone-500">{pinyin}</p>}
       {translation && <p className="mt-1 text-base text-stone-700">{translation}</p>}
     </div>
   )
@@ -159,7 +159,7 @@ export const MeasureWordList: React.FC<{ items?: MeasureWord[] | null; className
                 {mw.measureWordTraditional && (
                   <span className="font-chinese text-base text-stone-400">({mw.measureWordTraditional})</span>
                 )}
-                <span className="text-base font-semibold text-amber-700">{mw.pinyin}</span>
+                <span className="font-pinyin text-base font-semibold text-amber-700">{mw.pinyin}</span>
               </p>
               {mw.meaningVi && <p className="mt-1 text-sm leading-snug text-stone-700">{mw.meaningVi}</p>}
               <div className="mt-2 rounded-xl bg-white/80 px-3 py-2">

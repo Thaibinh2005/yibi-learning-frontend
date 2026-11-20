@@ -327,7 +327,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                             {vocab.hanzi.replace(/[0-9]+$/, '')}
                           </span>
                           {vocab.pinyin && (
-                            <span className="text-sm font-semibold text-[#C8322B]">
+                            <span className="font-pinyin text-sm font-semibold text-[#C8322B]">
                               {vocab.pinyin}
                             </span>
                           )}

@@ -191,7 +191,7 @@ export function PlacementResultPage() {
                     {result.missedWords.map((word) => (
                       <span key={word.word} className="inline-flex items-baseline gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
                         <span className="font-chinese text-base font-bold text-slate-800">{word.word}</span>
-                        {word.pinyin}
+                        <span className="font-pinyin">{word.pinyin}</span>
                       </span>
                     ))}
                   </div>

@@ -345,7 +345,7 @@ export const PathQuizRunner: React.FC<{
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-chinese text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl"><HanText value={question.prompt} /></h1>
-            {question.pinyin && <p className="mt-1 text-base font-medium text-brand">{question.pinyin}</p>}
+            {question.pinyin && <p className="font-pinyin mt-1 text-base font-medium text-brand">{question.pinyin}</p>}
           </div>
           {question.audioText && <AudioButton text={question.audioText} size="lg" title="Nghe phát âm" className="shrink-0" />}
         </div>
