@@ -11,6 +11,8 @@ export interface StrokeWriterHandle {
 }
 
 interface Props {
+  /** Tailwind max-width of the board; it stays square. */
+  frameClassName?: string
   char: string
   mode: WritingMode
   /** Called once when the last stroke of a quiz is accepted. */
@@ -51,7 +53,7 @@ const cssColor = (name: string): string => {
 }
 
 /** The writing board: animation, outline tracing and a graded quiz, drawn by Hanzi Writer. */
-export const StrokeWriter = forwardRef<StrokeWriterHandle, Props>(({ char, mode, onQuizComplete, onMissingData, onProgress }, ref) => {
+export const StrokeWriter = forwardRef<StrokeWriterHandle, Props>(({ char, mode, onQuizComplete, onMissingData, onProgress, frameClassName = 'max-w-sm' }, ref) => {
   const frame = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
   const writer = useRef<HanziWriter | null>(null)
@@ -147,7 +149,7 @@ export const StrokeWriter = forwardRef<StrokeWriterHandle, Props>(({ char, mode,
   }), [mode])
 
   return (
-    <div ref={frame} className="relative mx-auto aspect-square w-full max-w-sm rounded-md border-2 border-rose-300 bg-card">
+    <div ref={frame} className={`relative mx-auto aspect-square w-full ${frameClassName} rounded-md border-2 border-rose-300 bg-card`}>
       <svg className="pointer-events-none absolute inset-0 h-full w-full text-rose-200" viewBox="0 0 100 100" aria-hidden="true">
         <path d="M0 0L100 100M100 0L0 100M50 0V100M0 50H100" stroke="currentColor" strokeWidth=".6" strokeDasharray="2 2" fill="none" />
       </svg>

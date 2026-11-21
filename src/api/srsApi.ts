@@ -68,5 +68,15 @@ export interface WordStudy {
 export const getWordStudy = async (vocabularyId: number) =>
   (await axiosClient.get<ApiResponse<WordStudy>>(`/srs/words/${vocabularyId}`)).data.data
 
+/** A word's flashcard state for the learner; a word with no flashcard has no entry. */
+export interface WordStatus {
+  vocabularyId: number
+  status: 'NEW' | 'LEARNING' | 'MASTERED'
+  due: boolean
+}
+
+export const getWordStatuses = async (ids: number[]) =>
+  (await axiosClient.get<ApiResponse<WordStatus[]>>('/srs/word-status', { params: { ids: ids.join(',') } })).data.data
+
 export const addFlashcard = async (vocabularyId: number) =>
   (await axiosClient.post<ApiResponse<SrsCard>>(`/srs/add/${vocabularyId}`)).data.data

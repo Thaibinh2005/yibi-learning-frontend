@@ -22,6 +22,8 @@ interface Props {
   target: DeskTarget | null
   onWritten: (target: DeskTarget) => void
   onPickAlt?: (char: string) => void
+  /** 'split' puts the board beside the controls on a wide screen, so the desk fits a screen without scrolling. */
+  layout?: 'stack' | 'split'
 }
 
 const MODES: Array<{ mode: WritingMode; label: string; icon: typeof Eye }> = [
@@ -33,7 +35,9 @@ const MODES: Array<{ mode: WritingMode; label: string; icon: typeof Eye }> = [
 type Notice = { tone: 'ok' | 'warn'; text: string } | null
 
 /** The writing desk: one board, three modes, and the feedback of the last run. */
-export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) => {
+export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt, layout = 'stack' }) => {
+  const split = layout === 'split'
+  const side = split ? 'md:col-start-2' : ''
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const writer = useRef<StrokeWriterHandle>(null)
   const [mode, setMode] = useState<WritingMode>('view')
@@ -92,8 +96,8 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline gap-2">
+    <div className={split ? 'space-y-4 md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-8 md:gap-y-4 md:space-y-0' : 'space-y-4'}>
+      <div className={`flex items-baseline gap-2 ${side}`}>
         <span className="font-chinese text-4xl leading-tight text-slate-900">{target.char}</span>
         {target.pinyin && <span className="font-pinyin text-xl font-extrabold leading-snug text-brand">{target.pinyin}</span>}
         <AudioButton text={target.char} size="lg" title={`Nghe chữ ${target.char}`} className="shrink-0" />
@@ -101,16 +105,17 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
       </div>
 
       {target.alt && onPickAlt && (
-        <p className="text-sm text-slate-500">
+        <p className={`text-sm text-slate-500 ${side}`}>
           Dạng trong chữ khác:{' '}
           <button type="button" onClick={() => onPickAlt(target.alt as string)} className="font-chinese rounded-lg px-1.5 text-lg text-slate-800 underline decoration-slate-300 underline-offset-4 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300">{target.alt}</button>
         </p>
       )}
 
-      <div className="relative">
+      <div className={split ? 'relative md:col-start-1 md:row-span-6 md:row-start-1' : 'relative'}>
         <StrokeWriter
           key={target.char}
           ref={writer}
+          frameClassName={split ? 'max-w-[min(100%,28rem,calc(100dvh-21rem))]' : undefined}
           char={target.char}
           mode={mode}
           onProgress={(done, total) => {
@@ -127,7 +132,7 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
         )}
       </div>
 
-      <div className="flex justify-center">
+      <div className={`flex justify-center ${side}`}>
         <div className="inline-flex gap-1 rounded-2xl bg-slate-100 p-1" role="group" aria-label="Chế độ">
           {MODES.map(({ mode: value, label, icon: Icon }) => (
             <button
@@ -146,7 +151,7 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
         </div>
       </div>
 
-      <div className="flex justify-center gap-3">
+      <div className={`flex justify-center gap-3 ${side}`}>
         <button type="button" onClick={() => { setNotice(null); hints.current = 0; writer.current?.restart() }} className="btn-chunky btn-paper px-4 py-2 text-sm">
           <RotateCcw className="h-4 w-4" aria-hidden="true" />Viết lại
         </button>
@@ -155,7 +160,7 @@ export const WritingDesk: React.FC<Props> = ({ target, onWritten, onPickAlt }) =
         </button>
       </div>
 
-      <p aria-live="polite" className={`min-h-5 text-center text-sm leading-relaxed ${notice?.tone === 'ok' ? 'font-bold text-emerald-700' : 'text-slate-500'}`}>
+      <p aria-live="polite" className={`min-h-5 text-center text-sm leading-relaxed ${side} ${notice?.tone === 'ok' ? 'font-bold text-emerald-700' : 'text-slate-500'}`}>
         {notice?.text ?? (mode === 'quiz' ? 'Viết theo bút thuận, nét sai sẽ bị đánh dấu.' : mode === 'trace' ? 'Đồ theo nét mờ, không tính điểm.' : '')}
       </p>
     </div>

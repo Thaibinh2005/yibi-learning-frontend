@@ -1,14 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { HighlightWord } from '@/components/ui/HighlightWord'
-import { createPortal } from 'react-dom'
-import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3, Layers, LoaderCircle, Play, Sparkles, X, XCircle } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Eye, EyeOff, Layers, ListChecks, LoaderCircle, Play, Sparkles, XCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/app/hooks'
 import { getCourses, type Course } from '@/api/courseApi'
 import { generateAiLessonContent, getCompletedLessonIds, getLessonsByCourse, markLessonCompleted, startLessonPracticeSession, submitPracticeAnswer, type GeneratedLessonActivity, type Lesson, type LessonContentItem, type PracticeAnswerResult } from '@/api/lessonApi'
-import { addLessonVocabularyToFlashcards } from '@/api/srsApi'
 import { useRequireLogin } from '@/router/useRequireLogin'
 import { AudioButton } from '@/components/ui/AudioButton'
+import { LessonWordCard } from '@/components/learningpath/LessonWordCard'
+import { WordDetailModal } from '@/components/vocabulary/word-detail/WordDetailModal'
+import { WordWritingModal } from '@/components/learningpath/WordWritingModal'
+import { addFlashcard, getWordStatuses, type WordStatus } from '@/api/srsApi'
+import { getLessonVocabularies } from '@/api/vocabularyApi'
+import { displayHanzi } from '@/components/flashcard/useCardSession'
+import type { Vocabulary } from '@/types/vocabulary'
 
 // Level 7 is the combined HSK 7–9 band: the syllabus does not split it.
 const HSK_LEVELS = Array.from({ length: 7 }, (_, index) => index + 1)
@@ -85,9 +89,19 @@ export const LearningPage: React.FC = () => {
   const [answerStartedAt, setAnswerStartedAt] = useState<Record<string, number>>({})
   const [practiceSessionId, setPracticeSessionId] = useState<number | null>(null)
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['vocabulary', 'grammar', 'characters', 'readings', 'listenings', 'questions']))
-  const [addingFlashcards, setAddingFlashcards] = useState(false)
-  const [flashcardMessage, setFlashcardMessage] = useState('')
   const [completedIds, setCompletedIds] = useState<Set<number>>(new Set())
+  const [lessonWords, setLessonWords] = useState<Vocabulary[]>([])
+  const [wordStates, setWordStates] = useState<Record<number, WordStatus>>({})
+  const [wordStatesLoaded, setWordStatesLoaded] = useState(false)
+  const [savingWordId, setSavingWordId] = useState<number | null>(null)
+  const [openWordId, setOpenWordId] = useState<number | null>(null)
+  const [hideMeanings, setHideMeanings] = useState(false)
+  const [wordStatesFailed, setWordStatesFailed] = useState(false)
+  const [wordNotice, setWordNotice] = useState('')
+  const [writingWord, setWritingWord] = useState<string | null>(null)
+  // Where the lesson was scrolled to when a word or the writing board took the page, to come back to it.
+  const lessonScroll = useRef(0)
+  const showingPanel = useRef(false)
   const [completing, setCompleting] = useState(false)
   const [completeError, setCompleteError] = useState('')
   // A link from the learning path opens that lesson once; closing it must not reopen it.
@@ -97,20 +111,6 @@ export const LearningPage: React.FC = () => {
   const isAdmin = user?.role === 'ROLE_ADMIN'
   const { isAuthenticated, requireLogin } = useRequireLogin()
   // The library is open at every level, whatever the learner's place on the path.
-
-  useEffect(() => {
-    if (!lessonModalOpen) return
-    const previousOverflow = document.body.style.overflow
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLessonModalOpen(false)
-    }
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [lessonModalOpen])
 
   useEffect(() => {
     let active = true
@@ -172,14 +172,72 @@ export const LearningPage: React.FC = () => {
   const dialogueCount = selectedLesson?.lessonPayload?.sections?.dialogues?.length ?? 0
   const sourceExerciseCount = selectedLesson?.lessonPayload?.sections?.exercises?.length ?? 0
 
+  const refreshWordStates = useCallback((ids: number[]) => {
+    if (ids.length === 0) { setWordStates({}); setWordStatesFailed(false); setWordStatesLoaded(true); return Promise.resolve() }
+    return getWordStatuses(ids)
+      .then((list) => { setWordStates(Object.fromEntries(list.map((item) => [item.vocabularyId, item]))); setWordStatesFailed(false) })
+      .catch(() => setWordStatesFailed(true))
+      .finally(() => setWordStatesLoaded(true))
+  }, [])
+
+  // The lesson's words (to link, voice and mark them) and the learner's flashcard state of each.
+  const openLessonId = lessonModalOpen ? selectedLesson?.id : undefined
+  useEffect(() => {
+    if (openLessonId === undefined) return
+    let cancelled = false
+    setLessonWords([])
+    setWordStates({})
+    setWordStatesLoaded(false)
+    setWordStatesFailed(false)
+    setWordNotice('')
+    getLessonVocabularies(openLessonId)
+      .then((res) => {
+        if (cancelled) return
+        const words = res.success && Array.isArray(res.data) ? res.data : []
+        setLessonWords(words)
+        return refreshWordStates(words.map((word) => word.id))
+      })
+      .catch(() => { if (!cancelled) setWordStatesLoaded(true) })
+    return () => { cancelled = true }
+  }, [openLessonId, refreshWordStates])
+
+  const wordsByHanzi = useMemo(() => new Map(lessonWords.map((word) => [displayHanzi(word.hanzi), word])), [lessonWords])
+
+  const saveWord = async (vocabularyId: number) => {
+    setSavingWordId(vocabularyId)
+    setWordNotice('')
+    try {
+      await addFlashcard(vocabularyId)
+      setWordStates((prev) => ({ ...prev, [vocabularyId]: { vocabularyId, status: 'NEW', due: true } }))
+    } catch {
+      // The word may already be in the deck (saved elsewhere): read the states again before calling it a failure.
+      const list = await getWordStatuses(lessonWords.map((word) => word.id)).catch(() => null)
+      if (list) setWordStates(Object.fromEntries(list.map((item) => [item.vocabularyId, item])))
+      if (!list?.some((item) => item.vocabularyId === vocabularyId)) setWordNotice('Chưa lưu được từ này. Hãy thử lại.')
+    } finally { setSavingWordId(null) }
+  }
+
+  const panelOpen = writingWord !== null || openWordId !== null
+  const rememberScroll = () => {
+    if (!showingPanel.current) lessonScroll.current = window.scrollY
+  }
+
+  useEffect(() => {
+    if (panelOpen && !showingPanel.current) window.scrollTo({ top: 0 })
+    if (!panelOpen && showingPanel.current) requestAnimationFrame(() => window.scrollTo({ top: lessonScroll.current }))
+    showingPanel.current = panelOpen
+  }, [panelOpen])
+
   const openLesson = (lesson: Lesson) => {
     // Studying a lesson needs an account; after signing in the learner comes back to this lesson.
     if (!requireLogin({ pathname: '/courses', search: `?hskLevel=${selectedHskLevel}&lessonId=${lesson.id}` })) return
     setSelectedLesson(lesson)
     setPracticeMode(false)
-    setFlashcardMessage('')
     setCompleteError('')
+    setOpenWordId(null)
+    setWritingWord(null)
     setLessonModalOpen(true)
+    window.scrollTo({ top: 0 })
   }
 
   useEffect(() => {
@@ -232,17 +290,6 @@ export const LearningPage: React.FC = () => {
     } finally { setGenerating(false) }
   }
 
-  const addFlashcards = async () => {
-    if (!selectedLesson) return
-    setAddingFlashcards(true)
-    setFlashcardMessage('')
-    try {
-      const result = await addLessonVocabularyToFlashcards(selectedLesson.id)
-      setFlashcardMessage(`${result.added} từ đã thêm${result.alreadyInDeck ? ` · ${result.alreadyInDeck} từ đã có` : ''}${result.unavailable ? ` · ${result.unavailable} từ chưa có trong bộ flashcard` : ''}`)
-      if (result.added > 0 || result.alreadyInDeck > 0) window.setTimeout(() => navigate('/flashcards'), 850)
-    } catch { setFlashcardMessage('Không thêm được từ vựng. Hãy đăng nhập lại và thử lần nữa.') }
-    finally { setAddingFlashcards(false) }
-  }
 
   const toggleSection = (key: string) => setOpenSections((current) => {
     const next = new Set(current)
@@ -281,16 +328,25 @@ export const LearningPage: React.FC = () => {
     if (typeof item.simplified === 'string') {
       const meaning = showValue(item.meaning_vi) || showValue(item.meaning_en)
       const example = item.example && typeof item.example === 'object' ? (item.example as Record<string, unknown>) : null
+      const hanzi = item.simplified
       return (
-        <article key={index} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
-          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-chinese text-xl font-bold text-slate-800">{item.simplified}</span>
-            <span className="text-sm text-[#C8322B]">{showValue(item.pinyin)}</span>
-            {showValue(item.part_of_speech) && <span className="rounded bg-white px-1.5 py-0.5 text-xs text-slate-500">{showValue(item.part_of_speech)}</span>}
-          </p>
-          {meaning ? <p className="mt-1 text-sm leading-relaxed text-slate-600">{meaning}{!item.meaning_vi && ' (tiếng Anh)'}</p> : <p className="mt-1 text-xs text-slate-400">Chưa có nghĩa.</p>}
-          {example && <p className="mt-2 border-l-2 border-slate-200 pl-3 text-sm leading-relaxed"><span className="font-chinese text-slate-800"><HighlightWord sentence={showValue(example.zh)} word={item.simplified} /></span>{showValue(example.vi) && <span className="block text-xs text-slate-500">{showValue(example.vi)}</span>}</p>}
-        </article>
+        <LessonWordCard
+          key={`${index}-${hideMeanings}`}
+          hideMeaning={hideMeanings}
+          hanzi={hanzi}
+          pinyin={showValue(item.pinyin)}
+          partOfSpeech={showValue(item.part_of_speech)}
+          meaning={meaning}
+          englishOnly={!item.meaning_vi}
+          example={example ? { zh: showValue(example.zh), vi: showValue(example.vi) } : null}
+          word={wordsByHanzi.get(displayHanzi(hanzi))}
+          status={(() => { const found = wordsByHanzi.get(displayHanzi(hanzi)); return found ? wordStates[found.id] ?? null : null })()}
+          statusLoaded={wordStatesLoaded && !wordStatesFailed}
+          saving={savingWordId === wordsByHanzi.get(displayHanzi(hanzi))?.id}
+          onOpen={(id) => { rememberScroll(); setWritingWord(null); setOpenWordId(id) }}
+          onWrite={() => { rememberScroll(); setOpenWordId(null); setWritingWord(hanzi) }}
+          onSave={saveWord}
+        />
       )
     }
     if (typeof item.question === 'string') return <QuestionCard key={index} item={item} />
@@ -321,8 +377,14 @@ export const LearningPage: React.FC = () => {
     )
   }
 
+  const inLesson = lessonModalOpen && selectedLesson !== null
+  const panel = !panelOpen ? null : writingWord !== null
+    ? <WordWritingModal inline hanzi={writingWord} onClose={() => setWritingWord(null)} />
+    : <WordDetailModal inline vocabularyId={openWordId as number} onClose={() => setOpenWordId(null)} onChanged={() => { refreshWordStates(lessonWords.map((word) => word.id)) }} />
+
   return (
     <div className="space-y-5">
+      <div className={inLesson ? 'hidden' : 'space-y-5'}>
       <header className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-red-50 p-3 text-[#C8322B]"><BookOpen className="h-5 w-5" /></div>
@@ -368,7 +430,7 @@ export const LearningPage: React.FC = () => {
                 return <article key={lesson.id} className="group flex items-center gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-rose-200 hover:bg-rose-50/30 sm:gap-4 sm:px-5">
                   <button type="button" onClick={() => openLesson(lesson)} aria-label={`Mở bài ${lessonNumber(lesson)}: ${lessonTitle(lesson)}`} className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#F36565] to-[#D72E32] text-white shadow-[0_3px_0_#A71F24] transition hover:scale-105"><Play className="ml-0.5 h-5 w-5 fill-current" /></button>
                   <button type="button" onClick={() => openLesson(lesson)} className="min-w-0 flex-1 text-left"><h3 className="flex items-center gap-1.5 font-bold text-slate-800">{completedIds.has(lesson.id) && <CheckCircle2 aria-label="Đã hoàn thành" className="h-4 w-4 shrink-0 text-emerald-600" />}<span className="truncate">Bài {lessonNumber(lesson)}: {lessonTitle(lesson)}</span></h3><div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">{vocab > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">♧ {vocab} từ vựng</span>}{grammar > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">文 {grammar} ngữ pháp</span>}{characters > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">字 {characters} chữ Hán</span>}{dialogues > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">▢ {dialogues} hội thoại</span>}</div></button>
-                  <button type="button" onClick={() => openLesson(lesson)} className="hidden items-center gap-1 text-xs font-semibold text-slate-400 transition group-hover:text-[#C8322B] sm:inline-flex"><span>12 phút</span><ChevronRight className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => openLesson(lesson)} className="hidden items-center gap-1 text-xs font-semibold text-slate-400 transition group-hover:text-[#C8322B] sm:inline-flex"><ChevronRight className="h-4 w-4" /></button>
                 </article>
               })}
               {topicLessons.length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">Nhóm này chưa có bài học trong giáo trình.</p>}
@@ -377,21 +439,25 @@ export const LearningPage: React.FC = () => {
         </div>
       )}
 
-      {lessonModalOpen && selectedLesson && createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 p-0 backdrop-blur-[2px] sm:p-3 md:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) setLessonModalOpen(false) }}>
-        <section role="dialog" aria-modal="true" aria-labelledby="lesson-modal-title" className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:h-[92dvh] sm:max-h-[calc(100dvh-1.5rem)] sm:max-w-5xl sm:rounded-2xl md:rounded-3xl">
+      </div>
+
+      {panel}
+
+      {inLesson && selectedLesson && (
+        <section aria-labelledby="lesson-modal-title" className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs ${panelOpen ? 'hidden' : ''}`}>
           <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-3 py-3 sm:gap-4 sm:px-6 sm:py-5">
-            <div className="flex min-w-0 items-start gap-3"><button type="button" onClick={() => practiceMode ? setPracticeMode(false) : setLessonModalOpen(false)} aria-label="Quay lại" className="mt-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">{practiceMode ? <ArrowLeft className="h-5 w-5" /> : <X className="h-5 w-5" />}</button><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#C8322B]">HSK {hskLabel(selectedHskLevel)} · Bài {lessonNumber(selectedLesson)}</p><h2 id="lesson-modal-title" className="mt-1 text-xl font-bold text-slate-800">{lessonTitle(selectedLesson)}</h2><p className="mt-1 text-xs text-slate-500">{selectedLesson.lessonPayload?.source?.book_title ?? selectedCourse?.title}{selectedLesson.lessonPayload?.source?.start_page ? ` · Trang ${selectedLesson.lessonPayload.source.start_page}-${selectedLesson.lessonPayload.source.end_page}` : ''}</p></div></div>
+            <div className="flex min-w-0 items-start gap-3"><button type="button" onClick={() => practiceMode ? setPracticeMode(false) : setLessonModalOpen(false)} aria-label={practiceMode ? 'Quay lại bài học' : 'Quay lại thư viện giáo trình'} title={practiceMode ? 'Quay lại bài học' : 'Quay lại thư viện giáo trình'} className="mt-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><ArrowLeft className="h-5 w-5" /></button><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#C8322B]">HSK {hskLabel(selectedHskLevel)} · Bài {lessonNumber(selectedLesson)}</p><h2 id="lesson-modal-title" className="mt-1 text-xl font-bold text-slate-800">{lessonTitle(selectedLesson)}</h2><p className="mt-1 text-xs text-slate-500">{selectedLesson.lessonPayload?.source?.book_title ?? selectedCourse?.title}{selectedLesson.lessonPayload?.source?.start_page ? ` · Trang ${selectedLesson.lessonPayload.source.start_page}-${selectedLesson.lessonPayload.source.end_page}` : ''}</p></div></div>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {!practiceMode && <button type="button" onClick={completeLesson} disabled={completing || completedIds.has(selectedLesson.id)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"><CheckCircle2 className="h-4 w-4" />{completedIds.has(selectedLesson.id) ? 'Đã hoàn thành' : completing ? 'Đang lưu...' : 'Hoàn thành bài'}</button>}
-              {!practiceMode && <button type="button" onClick={addFlashcards} disabled={addingFlashcards || vocabularyCount === 0} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Layers className="h-4 w-4" />{addingFlashcards ? 'Đang thêm...' : 'Flashcard'}</button>}
+              {!practiceMode && <button type="button" onClick={() => navigate(`/courses/lessons/${selectedLesson.id}/flashcards?hskLevel=${selectedHskLevel}`)} disabled={vocabularyCount === 0} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Layers className="h-4 w-4" />Flashcard</button>}
+              {!practiceMode && <button type="button" onClick={() => navigate(`/courses/lessons/${selectedLesson.id}/quiz?hskLevel=${selectedHskLevel}`)} disabled={vocabularyCount < 4} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><ListChecks className="h-4 w-4" />Trắc nghiệm</button>}
               {!practiceMode && (generated || isAdmin) && <button type="button" onClick={startPractice} disabled={generating || !selectedLesson.lessonPayload} className="inline-flex items-center gap-2 rounded-xl bg-[#C8322B] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-60">{generating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{generating ? 'AI đang chuẩn bị bài học...' : generated ? 'Học lại' : 'Bắt đầu học'}</button>}
             </div>
             {!practiceMode && completedIds.has(selectedLesson.id) && <Link to="/learning-path" className="basis-full rounded-lg bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Đã lưu tiến độ · Về lộ trình để làm việc tiếp theo</Link>}
             {completeError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{completeError}</p>}
             {aiError && <p role="alert" className="basis-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">{aiError}</p>}
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6">
-            {flashcardMessage && !practiceMode && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{flashcardMessage}</div>}
+          <div className="px-3 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6">
             {practiceMode && generated ? <div className="mx-auto max-w-3xl space-y-5">
               <div className="rounded-2xl bg-violet-50 p-5"><p className="text-xs font-bold uppercase tracking-wide text-violet-700">Bài học được xây dựng từ giáo trình</p><p className="mt-2 text-sm leading-relaxed text-slate-700">{generated.introduction}</p>{generated.teaching_points?.length > 0 && <div className="mt-4 space-y-2">{generated.teaching_points.map((point, index) => <p key={index} className="rounded-xl bg-white/80 p-3 text-sm leading-relaxed text-slate-700"><b className="mr-2 text-violet-700">{index + 1}.</b>{point}</p>)}</div>}{generated.objectives.length > 0 && <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">{generated.objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>}</div>
               {generated.activities.map((activity: GeneratedLessonActivity, index) => {
@@ -407,15 +473,15 @@ export const LearningPage: React.FC = () => {
                 {sourceExerciseCount > 0 && <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-500"><b className="text-slate-700">Bài tập trong sách: {sourceExerciseCount} mục.</b> Đây là nội dung gốc được trích từ giáo trình.</div>}
                 {activeSections.map((section) => {
                   const isOpen = openSections.has(section.key)
-                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className={`border-t border-slate-100 p-4 ${section.key === 'characters' ? 'flex flex-wrap gap-2' : 'space-y-3'}`}>{section.items.slice(0, FULL_SECTIONS.includes(section.key) ? undefined : 5).map(renderSourceItem)}{!FULL_SECTIONS.includes(section.key) && section.items.length > 5 && <p className="text-xs text-slate-400">Còn {section.items.length - 5} nội dung khác sẽ có trong phần học.</p>}{section.key === 'vocabulary' && <p className="text-xs text-slate-400">Nghĩa: CVDICT (CC BY-SA 4.0), dịch tự động, chưa kiểm duyệt hết. Câu ví dụ: Tatoeba (CC BY 2.0 FR).</p>}</div>}</section>
+                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className={`border-t border-slate-100 p-4 ${section.key === 'characters' ? 'flex flex-wrap gap-2' : 'space-y-3'}`}>{section.key === 'vocabulary' && wordNotice && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{wordNotice}</p>}{section.key === 'vocabulary' && <button type="button" aria-pressed={hideMeanings} onClick={() => setHideMeanings((value) => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">{hideMeanings ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}{hideMeanings ? 'Hiện nghĩa' : 'Ẩn nghĩa để tự kiểm tra'}</button>}{section.items.slice(0, FULL_SECTIONS.includes(section.key) ? undefined : 5).map(renderSourceItem)}{!FULL_SECTIONS.includes(section.key) && section.items.length > 5 && <p className="text-xs text-slate-400">Còn {section.items.length - 5} nội dung khác sẽ có trong phần học.</p>}{section.key === 'vocabulary' && <p className="text-xs text-slate-400">Nghĩa: CVDICT (CC BY-SA 4.0), dịch tự động, chưa kiểm duyệt hết. Câu ví dụ: Tatoeba (CC BY 2.0 FR).</p>}</div>}</section>
                 })}
               </div>
-              <aside className="h-fit min-w-0 rounded-2xl border border-slate-200 p-4 lg:sticky lg:top-0"><h3 className="font-bold text-slate-800">Trong bài học</h3><div className="mt-3 space-y-2 text-sm text-slate-600">{activeSections.map((section) => <p key={section.key} className="flex justify-between"><span>{section.label}</span><b>{section.items.length}</b></p>)}<p className="flex justify-between"><span>Thời lượng</span><b className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />12 phút</b></p></div><p className="mt-4 rounded-xl bg-violet-50 p-3 text-xs leading-relaxed text-violet-800">{generated || isAdmin ? 'Bấm “Bắt đầu học” để vào bài luyện tập trắc nghiệm từ dữ liệu của bài này.' : 'Thư viện dùng để xem lại nội dung. Hãy luyện tập trong Lộ trình.'}</p></aside>
+              <aside className="h-fit min-w-0 rounded-2xl border border-slate-200 p-4 lg:sticky lg:top-20"><h3 className="font-bold text-slate-800">Trong bài học</h3><div className="mt-3 space-y-2 text-sm text-slate-600">{activeSections.map((section) => <p key={section.key} className="flex justify-between"><span>{section.label}</span><b>{section.items.length}</b></p>)}</div><p className="mt-4 rounded-xl bg-violet-50 p-3 text-xs leading-relaxed text-violet-800">{generated || isAdmin ? 'Bấm “Bắt đầu học” để vào bài luyện tập trắc nghiệm từ dữ liệu của bài này.' : 'Luyện nhanh ở đây, học sâu trong Lộ trình.'}</p></aside>
             </div>}
           </div>
-          {!practiceMode && <footer className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-7"><span>{vocabularyCount > 0 ? `${vocabularyCount} từ trong bài · Có thể thêm vào bộ flashcard cá nhân` : ''}</span><button type="button" onClick={() => setLessonModalOpen(false)} className="font-semibold text-slate-500 hover:text-slate-800">Đóng</button></footer>}
+          {!practiceMode && <footer className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-7"><span>{vocabularyCount > 0 ? `${vocabularyCount} từ trong bài · Có thể thêm vào bộ flashcard cá nhân` : ''}</span><button type="button" onClick={() => setLessonModalOpen(false)} className="font-semibold text-slate-500 hover:text-slate-800">Về thư viện</button></footer>}
         </section>
-      </div>, document.body)}
+      )}
     </div>
   )
 }
