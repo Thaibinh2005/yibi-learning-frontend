@@ -11,6 +11,9 @@ import { WordDetailModal } from '@/components/vocabulary/word-detail/WordDetailM
 import { WordWritingModal } from '@/components/learningpath/WordWritingModal'
 import { addFlashcard, getWordStatuses, type WordStatus } from '@/api/srsApi'
 import { getLessonVocabularies } from '@/api/vocabularyApi'
+import { getLessonGrammar } from '@/api/grammarApi'
+import { LessonGrammarCard } from '@/components/learningpath/LessonGrammarCard'
+import type { GrammarPoint } from '@/types/grammar'
 import { displayHanzi } from '@/components/flashcard/useCardSession'
 import type { Vocabulary } from '@/types/vocabulary'
 
@@ -91,6 +94,7 @@ export const LearningPage: React.FC = () => {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['vocabulary', 'grammar', 'characters', 'readings', 'listenings', 'questions']))
   const [completedIds, setCompletedIds] = useState<Set<number>>(new Set())
   const [lessonWords, setLessonWords] = useState<Vocabulary[]>([])
+  const [grammarPoints, setGrammarPoints] = useState<GrammarPoint[]>([])
   const [wordStates, setWordStates] = useState<Record<number, WordStatus>>({})
   const [wordStatesLoaded, setWordStatesLoaded] = useState(false)
   const [savingWordId, setSavingWordId] = useState<number | null>(null)
@@ -186,10 +190,14 @@ export const LearningPage: React.FC = () => {
     if (openLessonId === undefined) return
     let cancelled = false
     setLessonWords([])
+    setGrammarPoints([])
     setWordStates({})
     setWordStatesLoaded(false)
     setWordStatesFailed(false)
     setWordNotice('')
+    getLessonGrammar(openLessonId)
+      .then((res) => { if (!cancelled && res.success && Array.isArray(res.data)) setGrammarPoints(res.data) })
+      .catch(() => undefined)
     getLessonVocabularies(openLessonId)
       .then((res) => {
         if (cancelled) return
@@ -473,7 +481,7 @@ export const LearningPage: React.FC = () => {
                 {sourceExerciseCount > 0 && <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-500"><b className="text-slate-700">Bài tập trong sách: {sourceExerciseCount} mục.</b> Đây là nội dung gốc được trích từ giáo trình.</div>}
                 {activeSections.map((section) => {
                   const isOpen = openSections.has(section.key)
-                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className={`border-t border-slate-100 p-4 ${section.key === 'characters' ? 'flex flex-wrap gap-2' : 'space-y-3'}`}>{section.key === 'vocabulary' && wordNotice && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{wordNotice}</p>}{section.key === 'vocabulary' && <button type="button" aria-pressed={hideMeanings} onClick={() => setHideMeanings((value) => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">{hideMeanings ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}{hideMeanings ? 'Hiện nghĩa' : 'Ẩn nghĩa để tự kiểm tra'}</button>}{section.items.slice(0, FULL_SECTIONS.includes(section.key) ? undefined : 5).map(renderSourceItem)}{!FULL_SECTIONS.includes(section.key) && section.items.length > 5 && <p className="text-xs text-slate-400">Còn {section.items.length - 5} nội dung khác sẽ có trong phần học.</p>}{section.key === 'vocabulary' && <p className="text-xs text-slate-400">Nghĩa: CVDICT (CC BY-SA 4.0), dịch tự động, chưa kiểm duyệt hết. Câu ví dụ: Tatoeba (CC BY 2.0 FR).</p>}</div>}</section>
+                  return <section key={section.key} className="overflow-hidden rounded-2xl border border-slate-200"><button type="button" aria-expanded={isOpen} onClick={() => toggleSection(section.key)} className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50"><span className="font-bold text-slate-800">{section.label}<span className="ml-2 text-xs font-medium text-slate-400">{section.items.length}</span></span><ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <div className={`border-t border-slate-100 p-4 ${section.key === 'characters' ? 'flex flex-wrap gap-2' : 'space-y-3'}`}>{section.key === 'vocabulary' && wordNotice && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{wordNotice}</p>}{section.key === 'vocabulary' && <button type="button" aria-pressed={hideMeanings} onClick={() => setHideMeanings((value) => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">{hideMeanings ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}{hideMeanings ? 'Hiện nghĩa' : 'Ẩn nghĩa để tự kiểm tra'}</button>}{section.key === 'grammar' && grammarPoints.length > 0 ? grammarPoints.map((point) => <LessonGrammarCard key={point.id} point={point} />) : section.items.slice(0, FULL_SECTIONS.includes(section.key) ? undefined : 5).map(renderSourceItem)}{!FULL_SECTIONS.includes(section.key) && section.items.length > 5 && <p className="text-xs text-slate-400">Còn {section.items.length - 5} nội dung khác sẽ có trong phần học.</p>}{section.key === 'vocabulary' && <p className="text-xs text-slate-400">Nghĩa: CVDICT (CC BY-SA 4.0), dịch tự động, chưa kiểm duyệt hết. Câu ví dụ: Tatoeba (CC BY 2.0 FR).</p>}</div>}</section>
                 })}
               </div>
               <aside className="h-fit min-w-0 rounded-2xl border border-slate-200 p-4 lg:sticky lg:top-20"><h3 className="font-bold text-slate-800">Trong bài học</h3><div className="mt-3 space-y-2 text-sm text-slate-600">{activeSections.map((section) => <p key={section.key} className="flex justify-between"><span>{section.label}</span><b>{section.items.length}</b></p>)}</div><p className="mt-4 rounded-xl bg-violet-50 p-3 text-xs leading-relaxed text-violet-800">{generated || isAdmin ? 'Bấm “Bắt đầu học” để vào bài luyện tập trắc nghiệm từ dữ liệu của bài này.' : 'Luyện nhanh ở đây, học sâu trong Lộ trình.'}</p></aside>
