@@ -13,6 +13,8 @@ import {
   LogOut,
   Map as MapIcon,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   PenLine,
   X,
   Lightbulb,
@@ -57,6 +59,8 @@ const VOCABULARY_SUB_ITEMS = [
 /** These pages take the whole screen, so nothing competes with the question being answered or the card being studied. */
 const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards|listening\/\d+)/
 
+const COLLAPSE_KEY = 'yibi.sidebar.collapsed'
+
 const navRow = (active: boolean) =>
   `flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-[15px] font-bold transition-colors ${
     active ? 'border-rose-200 bg-rose-50 text-brand' : 'border-transparent text-slate-600 hover:bg-slate-100'
@@ -75,6 +79,16 @@ export const UserLayout: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const isInsideVocab = location.pathname.startsWith('/vocabulary') && !isWritingPath(location.pathname)
   const [isVocabOpen, setIsVocabOpen] = useState(isInsideVocab)
+  // The menu can shrink to icons on a wide screen to leave room for the content; the choice is remembered.
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
+  })
+  const toggleCollapsed = () => setCollapsed((value) => {
+    try { localStorage.setItem(COLLAPSE_KEY, value ? '0' : '1') } catch { /* not remembered */ }
+    return !value
+  })
+  const row = (active: boolean) => `${navRow(active)}${collapsed ? ' md:justify-center md:gap-0 md:px-0' : ''}`
+  const hideWhenCollapsed = collapsed ? 'md:hidden' : ''
   const dropdownRef = useRef<HTMLDivElement>(null)
   const focused = FOCUS_PAGES.test(location.pathname)
 
@@ -162,9 +176,9 @@ export const UserLayout: React.FC = () => {
   const renderNavLink = ({ label, path, icon: Icon, isActive }: NavItem) => {
     const active = isActive(location.pathname)
     return (
-      <Link key={path} to={path} aria-current={active ? 'page' : undefined} className={navRow(active)}>
+      <Link key={path} to={path} aria-current={active ? 'page' : undefined} aria-label={label} title={collapsed ? label : undefined} className={row(active)}>
         <Icon className="h-5 w-5 shrink-0" />
-        {label}
+        <span className={hideWhenCollapsed}>{label}</span>
       </Link>
     )
   }
@@ -182,11 +196,11 @@ export const UserLayout: React.FC = () => {
         <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden border-r-2 border-slate-200/70 bg-white transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-20 shrink-0 items-center justify-between px-5">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 ${collapsed ? 'md:w-[4.5rem]' : ''} flex-col overflow-hidden border-r-2 border-slate-200/70 bg-white transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`flex h-20 shrink-0 items-center justify-between px-5 ${collapsed ? 'md:justify-center md:px-0' : ''}`}>
           <Link to="/dashboard" className="group flex items-center gap-3">
             <img src="/logo-yibi.png" alt="" width={48} height={48} className="h-12 w-12 shrink-0 transition-transform group-hover:-rotate-6" />
-            <span className="flex min-w-0 flex-col leading-none">
+            <span className={`flex min-w-0 flex-col leading-none ${hideWhenCollapsed}`}>
               <span className="select-none text-2xl font-extrabold tracking-tight text-slate-900">Yi<span className="text-brand">bi</span></span>
               <span className="mt-1 select-none whitespace-nowrap text-[11px] font-semibold text-slate-500">Học tiếng Trung cá nhân hóa</span>
             </span>
@@ -199,12 +213,12 @@ export const UserLayout: React.FC = () => {
         <nav className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 pb-3 [scrollbar-width:thin]" aria-label="Điều hướng chính">
           {PRIMARY_NAV.map(renderNavLink)}
 
-          <button type="button" aria-expanded={isVocabOpen} onClick={() => setIsVocabOpen((value) => !value)} className={`w-full justify-between ${navRow(isInsideVocab)}`}>
-            <span className="flex items-center gap-3"><BookMarked className="h-5 w-5 shrink-0" />Từ vựng</span>
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isVocabOpen ? 'rotate-180' : ''}`} />
+          <button type="button" aria-expanded={isVocabOpen} onClick={() => (collapsed && window.matchMedia('(min-width: 768px)').matches ? navigate('/vocabulary/daily') : setIsVocabOpen((value) => !value))} title={collapsed ? 'Từ vựng' : undefined} aria-label="Từ vựng" className={`w-full justify-between ${row(isInsideVocab)}`}>
+            <span className="flex items-center gap-3"><BookMarked className="h-5 w-5 shrink-0" /><span className={hideWhenCollapsed}>Từ vựng</span></span>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isVocabOpen ? 'rotate-180' : ''} ${hideWhenCollapsed}`} />
           </button>
           {isVocabOpen && (
-            <div className="animate-fade-in ml-6 space-y-0.5 border-l-2 border-slate-100 pl-3">
+            <div className={`animate-fade-in ml-6 space-y-0.5 border-l-2 border-slate-100 pl-3 ${hideWhenCollapsed}`}>
               {VOCABULARY_SUB_ITEMS.map((sub) => {
                 const active = location.pathname === sub.path || (sub.path === '/vocabulary/daily' && location.pathname === '/vocabulary')
                 return (
@@ -218,38 +232,47 @@ export const UserLayout: React.FC = () => {
 
           {[WRITING_ITEM, EXAM_ITEM].map(renderNavLink)}
 
-          <Link to="/courses" aria-current={location.pathname === '/courses' ? 'page' : undefined} className={navRow(location.pathname === '/courses')}>
+          <Link to="/courses" aria-current={location.pathname === '/courses' ? 'page' : undefined} aria-label="Thư viện giáo trình" title={collapsed ? 'Thư viện giáo trình' : undefined} className={row(location.pathname === '/courses')}>
             <Library className="h-5 w-5 shrink-0" />
-            <span className="whitespace-nowrap">Thư viện giáo trình</span>
+            <span className={`whitespace-nowrap ${hideWhenCollapsed}`}>Thư viện giáo trình</span>
           </Link>
 
-          <Link to="/tips" aria-current={location.pathname === '/tips' ? 'page' : undefined} className={navRow(location.pathname === '/tips')}>
+          <Link to="/tips" aria-current={location.pathname === '/tips' ? 'page' : undefined} aria-label="Mẹo học" title={collapsed ? 'Mẹo học' : undefined} className={row(location.pathname === '/tips')}>
             <Lightbulb className="h-5 w-5 shrink-0" />
-            Mẹo học
+            <span className={hideWhenCollapsed}>Mẹo học</span>
           </Link>
         </nav>
 
         <div className="shrink-0 p-3">
           {!isAuthenticated ? (
-            <Link to="/login" className="block rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
+            <Link to="/login" className={`block rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50 ${hideWhenCollapsed}`}>
               <span className="block text-sm font-extrabold text-slate-800">Chưa đăng nhập</span>
               <span className="block text-xs font-medium text-slate-500">Đăng nhập để lưu tiến độ học</span>
             </Link>
           ) : (
-          <Link to="/dashboard" className="flex items-center gap-3 rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
+          <Link to="/dashboard" title={collapsed ? `Hôm nay: ${goalPercent}%` : undefined} className={`flex items-center gap-3 rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50 ${collapsed ? 'md:justify-center md:px-0' : ''}`}>
             <GoalRing percent={goalPercent} size={52} stroke={6}>
               <span className="text-[11px] font-extrabold tabular-nums text-slate-800">{goalPercent}%</span>
             </GoalRing>
-            <span className="min-w-0">
+            <span className={`min-w-0 ${hideWhenCollapsed}`}>
               <span className="block text-sm font-extrabold text-slate-800">Hôm nay</span>
               <span className="block text-xs font-medium tabular-nums text-slate-500">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút · {levelLabel(level)}</span>
             </span>
           </Link>
           )}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+            title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+            className="mt-2 hidden w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 md:flex"
+          >
+            {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <><PanelLeftClose className="h-5 w-5" />Thu gọn</>}
+          </button>
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col md:pl-64">
+      <div className={`flex min-w-0 flex-1 flex-col ${collapsed ? 'md:pl-[4.5rem]' : 'md:pl-64'}`}>
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-2">
             <button onClick={() => setIsMobileMenuOpen(true)} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 md:hidden" aria-label="Mở menu">
