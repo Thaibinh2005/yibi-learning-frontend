@@ -46,7 +46,7 @@ export const WordSaveCard: React.FC<Props> = ({ word, onClose, deckHint = 'Bài 
   }
 
   return (
-    <div className="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-3">
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-3 max-xl:fixed max-xl:inset-x-3 max-xl:bottom-20 max-xl:z-40 max-xl:mx-auto max-xl:max-h-[65vh] max-xl:max-w-md max-xl:overflow-y-auto max-xl:shadow-2xl md:max-xl:bottom-6">
       <div className="min-w-0">
         <p><span className="font-chinese text-2xl text-foreground">{displayHanzi(word.hanzi)}</span><span className="ml-2 font-semibold text-brand">{word.pinyin}</span></p>
         <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{word.meaningVi || word.meaningEn}</p>

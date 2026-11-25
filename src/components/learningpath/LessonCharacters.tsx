@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutGrid, List, PenLine } from 'lucide-react'
+import { LayoutGrid, List, PenLine, X } from 'lucide-react'
 import { getVocabularies } from '@/api/vocabularyApi'
 import { AudioButton } from '@/components/ui/AudioButton'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -157,10 +157,13 @@ export const LessonCharacters: React.FC<Props> = ({ chars, onWrite }) => {
         )}
 
         {current && (
-          <aside aria-label={`Chi tiết chữ ${current.hanzi}`} className="h-fit rounded-xl border border-border bg-card p-4 md:sticky md:top-20">
+          <aside aria-label={`Chi tiết chữ ${current.hanzi}`} className="h-fit rounded-xl border border-border bg-card p-4 max-md:fixed max-md:inset-x-3 max-md:bottom-20 max-md:z-40 max-md:max-h-[65vh] max-md:overflow-y-auto max-md:shadow-2xl md:sticky md:top-20">
             <div className="flex items-start justify-between gap-2">
               <span className="font-chinese text-6xl leading-tight text-foreground">{current.hanzi}</span>
-              <AudioButton text={current.hanzi} size="md" />
+              <div className="flex items-center gap-1">
+                <AudioButton text={current.hanzi} size="md" />
+                <button type="button" onClick={() => setSelected(null)} aria-label="Đóng chi tiết" className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-muted"><X className="h-4 w-4" aria-hidden="true" /></button>
+              </div>
             </div>
             <p className="mt-1 text-lg font-bold leading-snug text-brand">{current.pinyin || '—'}</p>
             <p className="mt-1 text-sm leading-snug text-foreground">{current.meaning || 'Chưa có nghĩa cho chữ này.'}</p>
