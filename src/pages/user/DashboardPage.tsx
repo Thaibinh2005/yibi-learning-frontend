@@ -4,7 +4,7 @@ import { useAppSelector } from '@/app/hooks'
 import { getLearningPathOverview, getStudyStats, getTodayPlan, type DailyPlan, type LearningPathOverview, type StudyStats } from '@/api/learningPathApi'
 import { GoalRing } from '@/components/learningpath/GoalRing'
 import { levelLabel } from '@/components/learningpath/GoalForm'
-import { ArrowRight, BookMarked, Check, FileCheck, Flame, History, Layers, Library, Play, Trophy } from 'lucide-react'
+import { ArrowRight, BookMarked, Check, CircleCheckBig, FileCheck, Flame, History, Layers, Library, MessageSquareText, Play, Trophy } from 'lucide-react'
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
@@ -18,7 +18,11 @@ const WeekChart: React.FC<{ stats: StudyStats }> = ({ stats }) => {
     <section className="card-soft p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-lg font-extrabold text-slate-900">Thời gian học 7 ngày qua</h2>
-        <p className="text-xs font-medium text-slate-500">Hôm nay {stats.answersToday} câu{stats.answersToday > 0 ? `, đúng ${stats.accuracyToday}%` : ''} · {stats.nodesCompleted} bài đã xong</p>
+        <p className="text-xs font-medium text-slate-500">
+          Tổng <b className="text-slate-700">{stats.weekMinutes} phút</b>
+          {' · '}trung bình {Math.round(stats.weekMinutes / 7)} phút/ngày
+          {goal > 0 && <>{' · '}đạt mục tiêu <b className="text-slate-700">{stats.weekGoalDays}/7</b> ngày</>}
+        </p>
       </div>
       <div className="relative mt-8 h-36">
         <div className="absolute inset-x-0 border-t-2 border-dashed border-slate-300" style={{ bottom: `${goalAt}%` }}>
@@ -46,9 +50,28 @@ const WeekChart: React.FC<{ stats: StudyStats }> = ({ stats }) => {
           </li>
         ))}
       </ol>
+
+      <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 sm:grid-cols-4">
+        <TodayFigure icon={MessageSquareText} label="Câu trả lời hôm nay" value={String(stats.answersToday)} note={stats.answersToday > 0 ? `Đúng ${stats.accuracyToday}%` : 'Lộ trình và luyện tập'} />
+        <TodayFigure icon={Layers} label="Thẻ đã ôn hôm nay" value={String(stats.cardsReviewedToday)} note="Flashcard và chữ viết" />
+        <TodayFigure icon={CircleCheckBig} label="Bài đã hoàn thành" value={String(stats.nodesCompleted)} note="Trong lộ trình" />
+        <TodayFigure icon={Flame} label="Chuỗi dài nhất" value={`${stats.longestStreak} ngày`} note={`Hiện tại ${stats.streakDays} ngày`} />
+      </div>
     </section>
   )
 }
+
+/** One of today's figures under the chart; text in ink colours, the icon carries the meaning. */
+const TodayFigure: React.FC<{ icon: React.ElementType; label: string; value: string; note: string }> = ({ icon: Icon, label, value, note }) => (
+  <div className="flex items-start gap-2.5 rounded-xl px-2 py-1.5">
+    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+    <div className="min-w-0">
+      <p className="truncate text-[11px] font-semibold text-slate-500">{label}</p>
+      <p className="text-lg font-extrabold tabular-nums leading-tight text-slate-900">{value}</p>
+      <p className="truncate text-[11px] text-slate-500">{note}</p>
+    </div>
+  </div>
+)
 
 const Stat: React.FC<{ icon: React.ElementType; tint: string; label: string; value: string; note: string }> = ({ icon: Icon, tint, label, value, note }) => (
   <div className="card-soft flex items-center gap-4 p-4 sm:p-5">
@@ -71,7 +94,7 @@ const SHORTCUTS = [
 export const DashboardPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user)
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
-  const username = user?.username || 'bạn'
+  const username = user?.displayName || user?.username || 'bạn'
   const [stats, setStats] = useState<StudyStats | null>(null)
   const [plan, setPlan] = useState<DailyPlan | null>(null)
   const [overview, setOverview] = useState<LearningPathOverview | null>(null)

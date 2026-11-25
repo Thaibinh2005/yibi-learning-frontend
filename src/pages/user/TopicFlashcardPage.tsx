@@ -180,7 +180,7 @@ export const TopicFlashcardPage: React.FC = () => {
   return (
     // A page of its own without the menus (see UserLayout FOCUS_PAGES): only the cards, a way out and the progress.
     <LessonFrame
-      label={`${topic?.icon ?? ''} ${topic?.titleVi || 'Chủ đề'}${hskFilter ? ` · ${hskFilter}` : ''}`.trim()}
+      label={`${topic?.titleVi || 'Chủ đề'}${hskFilter ? ` · ${hskFilter}` : ''}`.trim()}
       progress={total > 0 ? learned / total : undefined}
       counter={total > 0 ? `Còn ${queue.length}/${total}` : undefined}
       exitTo={backTo}

@@ -15,6 +15,7 @@ import {
   Target,
   Trophy,
 } from 'lucide-react'
+import { unitIcon } from './unitIcons'
 import { Link, useNavigate } from 'react-router-dom'
 import { starsOf } from '@/components/learningpath/PathQuizRunner'
 import type { DailyPlan, DailyPlanItem, Roadmap, RoadmapNode, RoadmapUnit } from '@/api/learningPathApi'
@@ -111,10 +112,13 @@ const UnitBlock: React.FC<{ unit: RoadmapUnit }> = ({ unit }) => {
   const locked = unit.status === 'LOCKED'
   const theme = UNIT_THEMES[(unit.number - 1) % UNIT_THEMES.length]
   const percent = unit.total ? Math.round((unit.completed / unit.total) * 100) : 0
+  const UnitGlyph = unitIcon(unit.icon)
   return (
     <section aria-label={`Đơn vị ${unit.number}: ${unit.title}`}>
       <header className={`flex items-center gap-4 rounded-3xl px-5 py-4 ${locked ? 'bg-slate-200/70 text-slate-500' : `${theme.banner} text-white`}`}>
-        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl leading-none ${locked ? 'bg-white/60 grayscale' : 'bg-white/20'}`} aria-hidden="true">{unit.icon ?? '📘'}</span>
+        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${locked ? 'bg-white/60 text-slate-400' : 'bg-white/20 text-white'}`} aria-hidden="true">
+          <UnitGlyph className="h-6 w-6" strokeWidth={2} />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="font-chinese block truncate text-xs font-semibold opacity-85">Đơn vị {unit.number}{unit.titleZh ? ` · ${unit.titleZh}` : ''}</span>
           <span className="block truncate text-lg font-extrabold leading-snug">{unit.title}</span>

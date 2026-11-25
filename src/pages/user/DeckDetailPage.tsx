@@ -289,7 +289,7 @@ const LearnerDeck: React.FC = () => {
           <select value={topic} onChange={(e) => setTopic(e.target.value)} className={`${selectClass} max-w-[14rem]`} aria-label="Lọc theo chủ đề">
             <option value="">Mọi chủ đề</option>
             {topics.map((t) => (
-              <option key={t.slug} value={t.slug}>{t.icon} {t.titleVi}</option>
+              <option key={t.slug} value={t.slug}>{t.titleVi}</option>
             ))}
           </select>
           <select value={status} onChange={(e) => setStatus(e.target.value as DeckWordStatusFilter)} className={selectClass} aria-label="Lọc theo trạng thái ghi nhớ">

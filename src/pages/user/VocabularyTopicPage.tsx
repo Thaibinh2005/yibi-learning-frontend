@@ -1,3 +1,4 @@
+import { TopicIcon } from '@/components/vocabulary/topicIcons'
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -130,10 +131,10 @@ export const VocabularyTopicPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] space-y-8">
         {/* ── 1. HEADER SECTION ── */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-stone-200/80 relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-border relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-red-50 rounded-full blur-3xl -z-0 opacity-60 pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
@@ -141,10 +142,10 @@ export const VocabularyTopicPage: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5" />
                 Chủ đề từ vựng HSK 3.0
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
                 Từ vựng tiếng Trung theo chủ đề
               </h1>
-              <p className="text-sm sm:text-base text-stone-600 max-w-2xl leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 max-w-2xl leading-relaxed">
                 Học từ vựng qua ngữ cảnh thực tế với 178 chủ đề toàn diện từ đời
                 sống, ẩm thực, du lịch, giao tiếp đến công sở và học thuật.
               </p>
@@ -152,41 +153,41 @@ export const VocabularyTopicPage: React.FC = () => {
 
             {/* Quick stats pills */}
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
-              <div className="px-4 py-3 bg-stone-50 rounded-2xl border border-stone-200/60 text-center min-w-[100px]">
+              <div className="px-4 py-3 bg-gray-50 rounded-2xl border border-border text-center min-w-[100px]">
                 <div className="text-xl font-bold text-[#C8322B]">178</div>
-                <div className="text-xs text-stone-500 font-medium">Chủ đề</div>
+                <div className="text-xs text-gray-500 font-medium">Chủ đề</div>
               </div>
-              <div className="px-4 py-3 bg-stone-50 rounded-2xl border border-stone-200/60 text-center min-w-[100px]">
-                <div className="text-xl font-bold text-stone-800">HSK 1-9</div>
-                <div className="text-xs text-stone-500 font-medium">Cấp độ</div>
+              <div className="px-4 py-3 bg-gray-50 rounded-2xl border border-border text-center min-w-[100px]">
+                <div className="text-xl font-bold text-gray-800">HSK 1-9</div>
+                <div className="text-xs text-gray-500 font-medium">Cấp độ</div>
               </div>
-              <div className="px-4 py-3 bg-stone-50 rounded-2xl border border-stone-200/60 text-center min-w-[100px]">
+              <div className="px-4 py-3 bg-gray-50 rounded-2xl border border-border text-center min-w-[100px]">
                 <div className="text-xl font-bold text-emerald-600">Audio</div>
-                <div className="text-xs text-stone-500 font-medium">Phát âm chuẩn</div>
+                <div className="text-xs text-gray-500 font-medium">Phát âm chuẩn</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* ── 2. SEARCH & SORT BAR + HSK FILTER TABS ── */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80 space-y-6">
+        <div className="bg-white rounded-3xl p-6 shadow-xs border border-border space-y-6">
           {/* Row 1: Search & Sort */}
           <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
             {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Tìm kiếm chủ đề (ví dụ: ẩm thực, du lịch, công việc...)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 pr-10 py-3 rounded-2xl border-stone-200 focus:border-[#C8322B] focus:ring-[#C8322B] text-sm bg-stone-50/50 hover:bg-white transition-colors"
+                className="pl-11 pr-10 py-3 rounded-2xl border-border focus:border-[#C8322B] focus:ring-[#C8322B] text-sm bg-gray-50 hover:bg-white transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -194,14 +195,14 @@ export const VocabularyTopicPage: React.FC = () => {
             </div>
 
             {/* Sort Options Buttons */}
-            <div className="flex items-center gap-1.5 p-1 bg-stone-100 rounded-2xl self-start sm:self-auto">
+            <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-2xl self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setSortOption('count')}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   sortOption === 'count'
                     ? 'bg-white text-[#C8322B] shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <ArrowDownWideNarrow className="w-4 h-4" />
@@ -213,7 +214,7 @@ export const VocabularyTopicPage: React.FC = () => {
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   sortOption === 'az'
                     ? 'bg-white text-[#C8322B] shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <ArrowDownAZ className="w-4 h-4" />
@@ -223,8 +224,8 @@ export const VocabularyTopicPage: React.FC = () => {
           </div>
 
           {/* Row 2: HSK Level Filter Pills */}
-          <div className="space-y-2 pt-2 border-t border-stone-100">
-            <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
+          <div className="space-y-2 pt-2 border-t border-border">
+            <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
               <span>Lọc theo cấp độ HSK:</span>
               {(searchQuery || selectedHsk !== 'Tất cả' || sortOption !== 'count') && (
                 <button
@@ -249,7 +250,7 @@ export const VocabularyTopicPage: React.FC = () => {
                     className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 ${
                       isActive
                         ? 'bg-[#C8322B] text-white shadow-sm ring-2 ring-[#C8322B]/20'
-                        : 'bg-stone-100/80 text-stone-700 hover:bg-stone-200/70'
+                        : 'bg-gray-100/80 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     {level}
@@ -263,21 +264,21 @@ export const VocabularyTopicPage: React.FC = () => {
         {/* ── 3. TOPIC CARDS GRID ── */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm sm:text-base font-bold text-stone-800 flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-gray-800 flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#C8322B]" />
               Danh sách chủ đề ({topics.length})
             </h2>
-            <span className="text-xs text-stone-500">
+            <span className="text-xs text-gray-500">
               Nhấn vào thẻ chủ đề để học toàn bộ từ vựng
             </span>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-3xl p-6 border border-stone-200/80 space-y-4"
+                  className="bg-white rounded-3xl p-6 border border-border space-y-4"
                 >
                   <div className="flex items-center gap-3">
                     <Skeleton className="w-12 h-12 rounded-2xl" />
@@ -296,65 +297,64 @@ export const VocabularyTopicPage: React.FC = () => {
               ))}
             </div>
           ) : topics.length === 0 ? (
-            <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 space-y-4">
-              <div className="w-16 h-16 bg-stone-100 text-stone-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+            <div className="bg-white rounded-3xl p-12 text-center border border-border space-y-4">
+              <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto text-2xl">
                 🔍
               </div>
-              <h3 className="text-lg font-bold text-stone-800">
+              <h3 className="text-lg font-bold text-gray-800">
                 Không tìm thấy chủ đề phù hợp
               </h3>
-              <p className="text-sm text-stone-500 max-w-md mx-auto">
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
                 Không có chủ đề nào khớp với từ khóa &ldquo;{searchQuery}&rdquo; và bộ lọc
                 đã chọn. Bạn hãy thử tìm kiếm với cụm từ khác nhé!
               </p>
               <Button
                 variant="outline"
                 onClick={handleResetFilters}
-                className="rounded-xl border-stone-300 hover:border-[#C8322B] hover:text-[#C8322B]"
+                className="rounded-xl border-border hover:border-[#C8322B] hover:text-[#C8322B]"
               >
                 Xóa bộ lọc
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {topics.map((topic) => (
                 <div
                   key={topic.id || topic.slug}
                   onClick={() => handleOpenTopic(topic)}
-                  className="group bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 hover:border-[#C8322B]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                  className="group bg-white rounded-3xl p-5 sm:p-6 border border-border hover:border-[#C8322B]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-3.5">
                     {/* Header: Icon, Titles, Badges */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3.5">
-                        <span className="text-3xl sm:text-4xl p-2.5 bg-stone-50 group-hover:bg-red-50/60 rounded-2xl border border-stone-200/50 group-hover:border-[#C8322B]/20 transition-colors">
-                          {topic.icon || '📖'}
-                        </span>
-                        <div>
-                          <h3 className="font-bold text-base sm:text-lg text-stone-900 group-hover:text-[#C8322B] transition-colors leading-snug">
+                    {/* The icon and the HSK badge keep their size; the title takes the rest and wraps by words (two lines at most). */}
+                    <div className="flex items-start gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                        <TopicIcon emoji={topic.icon} toneKey={topic.slug ?? topic.titleVi} className="transition-transform group-hover:scale-105" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="line-clamp-2 break-normal text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-[#C8322B] sm:text-lg" title={topic.titleVi}>
                             {topic.titleVi}
                           </h3>
-                          <p className="text-xs sm:text-sm font-medium text-stone-500">
+                          <p className="font-chinese truncate text-xs font-medium text-gray-500 sm:text-sm" title={topic.titleZh}>
                             {topic.titleZh}
                           </p>
                         </div>
                       </div>
 
                       {/* HSK Badge */}
-                      <span className="px-2.5 py-1 rounded-xl bg-stone-100 text-stone-700 text-xs font-semibold whitespace-nowrap group-hover:bg-red-100 group-hover:text-[#C8322B] transition-colors">
+                      <span className="shrink-0 px-2.5 py-1 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold whitespace-nowrap group-hover:bg-red-100 group-hover:text-[#C8322B] transition-colors">
                         {selectedHsk === 'Tất cả' ? topic.hskLevel : selectedHsk}
                       </span>
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs sm:text-sm text-stone-600 line-clamp-2 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed">
                       {topic.description}
                     </p>
 
                     {/* Sample Words Chips */}
                     {topic.sampleWords && topic.sampleWords.length > 0 && (
                       <div className="space-y-1.5 pt-1">
-                        <div className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+                        <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                           Từ vựng tiêu biểu:
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -362,13 +362,13 @@ export const VocabularyTopicPage: React.FC = () => {
                             <span
                               key={idx}
                               title={`${sw.pinyin}: ${sw.meaningVi}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-50 group-hover:bg-stone-100 border border-stone-200/60 text-xs text-stone-700 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 group-hover:bg-gray-100 border border-border text-xs text-gray-700 transition-colors"
                             >
-                              <span className="font-semibold text-stone-900">
+                              <span className="font-semibold text-gray-900">
                                 {sw.hanzi}
                               </span>
                               {sw.pinyin && (
-                                <span className="font-pinyin text-stone-400 text-[11px]">
+                                <span className="font-pinyin text-gray-400 text-[11px]">
                                   ({sw.pinyin})
                                 </span>
                               )}
@@ -380,9 +380,9 @@ export const VocabularyTopicPage: React.FC = () => {
                   </div>
 
                   {/* Footer: Word count & Action */}
-                  <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between text-xs">
-                    <span className="font-semibold text-stone-500">
-                      <strong className="text-stone-800 font-bold">
+                  <div className="pt-4 mt-4 border-t border-border flex items-center justify-between text-xs">
+                    <span className="font-semibold text-gray-500">
+                      <strong className="text-gray-800 font-bold">
                         {topic.wordCount || topic.sampleWords?.length || 0}
                       </strong>{' '}
                       từ vựng

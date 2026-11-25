@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Bookmark, BookmarkCheck, Check, Flag, FolderPlus, LoaderCircle, X } from 'lucide-react'
+import { ArrowLeft, Bookmark, BookmarkCheck, Check, Flag, FolderPlus, LoaderCircle, MessageSquareWarning, X } from 'lucide-react'
+import { ReportDialog } from '@/components/ui/ReportDialog'
 import { useAppSelector } from '@/app/hooks'
 import { AudioButton } from '@/components/ui/AudioButton'
 import { shortMeaning } from '@/components/flashcard/LevelMeaning'
@@ -45,6 +46,7 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
 
   const [vocab, setVocab] = useState<Vocabulary | null>(null)
   const [vocabFailed, setVocabFailed] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const [details, setDetails] = useState<WordDetails | null>(null)
   const [detailsFailed, setDetailsFailed] = useState(false)
   const [study, setStudy] = useState<WordStudy | null>(null)
@@ -115,6 +117,8 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // The report dialog on top handles its own keys.
+      if (reporting) return
       if (e.key === 'Escape') {
         e.preventDefault()
         if (saveOpen) setSaveOpen(false)
@@ -137,7 +141,7 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
     // Capture, so page shortcuts (flashcard keys) never see the keys pressed in the modal.
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose, saveOpen])
+  }, [onClose, saveOpen, reporting])
 
   const openWord = (id: number) => {
     if (id === currentId) return
@@ -295,6 +299,13 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
                     <Flag className="h-4 w-4" />
                     {isHard ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setReporting(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-[#C8322B]"
+                  >
+                    <MessageSquareWarning className="h-4 w-4" /> Báo lỗi
+                  </button>
                 </>
               ) : (
                 <Link to="/login" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
@@ -390,6 +401,12 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
           )}
         </div>
       </div>
+      {reporting && vocab && (
+        <ReportDialog
+          target={{ type: 'VOCABULARY', id: currentId, label: `${word}${vocab.pinyin ? ' · ' + vocab.pinyin : ''}` }}
+          onClose={() => setReporting(false)}
+        />
+      )}
     </div>
     , document.body
   )

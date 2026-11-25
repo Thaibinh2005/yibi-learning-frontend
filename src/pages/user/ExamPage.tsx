@@ -13,6 +13,7 @@ import { PinyinInput } from '@/components/exam/PinyinInput'
 import { AudioButton } from '@/components/ui/AudioButton'
 import { GuestNotice } from '@/components/ui/GuestNotice'
 import { useAppSelector } from '@/app/hooks'
+import { MockTestList } from '@/components/exam/MockTestList'
 
 const levelName = (level: number) => (level >= 7 ? 'HSK 7–9' : `HSK ${level}`)
 const clock = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
@@ -112,8 +113,10 @@ export const ExamPage: React.FC = () => {
   if (!paper) {
     return (
       <div className="space-y-6">
+        <MockTestList />
+        <h2 className="pt-4 text-xl font-extrabold text-slate-900">Luyện thêm</h2>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-          <h1 className="text-xl font-bold text-slate-800">Thi thử trên máy</h1>
+          <h3 className="text-lg font-bold text-slate-800">Đề luyện tự tạo trên máy</h3>
           <p className="mt-1 text-sm leading-relaxed text-slate-500">Mô phỏng cách thi HSK trên máy tính: có đồng hồ đếm ngược, phần nghe, phần đọc và gõ chữ Hán ngay trên trang. Đề do hệ thống tạo từ nội dung bài học của cấp đó, không phải đề thi HSK chính thức.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />25 phút</span>

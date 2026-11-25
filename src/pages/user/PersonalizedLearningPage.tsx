@@ -157,7 +157,9 @@ const LearnerPath: React.FC = () => {
         {plan && roadmap && <RoadmapView plan={plan} roadmap={roadmap} onSelectLevel={(level) => { getRoadmap(level).then(setRoadmap).catch(() => setError('Không tải được cấp này.')) }} />}
       </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-24">
+      {/* Sticky, but never taller than the viewport: below the 64px header it scrolls on its own,
+          so the radar, skill bars and the goal form stay reachable however long the roadmap is. */}
+      <aside className="space-y-4 lg:sticky lg:top-20 lg:-mx-2 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:overscroll-contain lg:px-2 lg:pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {goal && (
           <section className="card-soft p-5">
             <div className="flex items-center justify-between gap-3">

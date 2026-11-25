@@ -8,7 +8,7 @@
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --background: 40 33% 97%;        /* warm paper #FAF8F4 */
+    --background: 210 20% 98%;       /* #F9FAFB */
     --foreground: 24 10% 10%;        /* warm ink */
 
     --card: 0 0% 100%;               /* pure white */
@@ -34,8 +34,8 @@
     --destructive: 0 75% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 12% 89%;
-    --input: 30 12% 89%;
+    --border: 220 13% 91%;           /* #E5E7EB */
+    --input: 220 13% 91%;
     --ring: 3 65% 48%;
 
     --radius: 0.875rem;              /* 14px: friendly, matching the cards */
@@ -109,7 +109,7 @@
   .btn-paper { @apply border-2 border-slate-200 bg-white text-slate-700 focus-visible:ring-slate-300; --edge: #E7E5E4; }
   .btn-chunky:disabled { @apply bg-slate-200 text-slate-400; --edge: #D6D3D1; }
 
-  .card-soft { @apply rounded-3xl border border-slate-200/80 bg-white shadow-xs; }
+  .card-soft { @apply rounded-3xl border border-border bg-card shadow-xs; }
 }
 
 /* ── Animations ─────────────────────────────────────────────── */

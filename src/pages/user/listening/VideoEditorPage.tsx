@@ -368,7 +368,8 @@ export function VideoEditorPage() {
         const translated = done.segments.filter((s) => s.vi && !s.viStale).length
         announceTranslationStarted(id, done.title, translated, done.segments.length)
       }
-      navigate('/listening', { state: { finishedId: id } })
+      if (done.editorial) navigate(`/admin?tab=library&publish=${id}`)
+      else navigate('/listening', { state: { finishedId: id } })
     } catch (err) {
       setFinishError(apiError(err, 'Chưa hoàn tất được. Hãy thử lại.'))
       setFinishing(false)
@@ -376,9 +377,11 @@ export function VideoEditorPage() {
   }
 
   // ── Render ───────────────────────────────────────────────────────
+  const back = video?.editorial ? '/admin?tab=library' : '/listening'
+
   if (loadError) {
     return (
-      <Shell title="Sửa lời thoại">
+      <Shell back={back} title="Sửa lời thoại">
         <div className="mx-auto mt-10 max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">
           <AlertCircle className="mx-auto h-8 w-8" />
           <p className="mt-2 font-bold">{loadError}</p>
@@ -389,7 +392,7 @@ export function VideoEditorPage() {
   }
   if (!video) {
     return (
-      <Shell title="Sửa lời thoại">
+      <Shell back={back} title="Sửa lời thoại">
         <div className="mt-16 flex justify-center text-slate-500"><Loader2 className="h-6 w-6 animate-spin" /></div>
       </Shell>
     )
@@ -399,7 +402,7 @@ export function VideoEditorPage() {
   if (!video.editable) {
     const pending = video.mine && video.visibility === 'PENDING_REVIEW'
     return (
-      <Shell title={video.title}>
+      <Shell back={back} title={video.title}>
         <div className="mx-auto mt-10 max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <Lock className="mx-auto h-10 w-10 text-slate-400" />
           <h2 className="mt-4 text-xl font-bold text-ink">
@@ -439,7 +442,7 @@ export function VideoEditorPage() {
 
   if (video.status === 'PROCESSING' || video.status === 'FAILED') {
     return (
-      <Shell title={video.title}>
+      <Shell back={back} title={video.title}>
         <div className="mx-auto mt-10 max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           {video.status === 'PROCESSING' ? (
             <>
@@ -476,7 +479,7 @@ export function VideoEditorPage() {
   const translated = rows.filter((r) => r.vi && !r.viStale).length
 
   return (
-    <Shell
+    <Shell back={back}
       title={video.title}
       right={
         <div className="flex items-center gap-2">
@@ -695,12 +698,18 @@ export function VideoEditorPage() {
   )
 }
 
-function Shell({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
+/** `back`: where the arrow goes — the admin library tab for the team's lessons, else the learner's list. */
+function Shell({ title, right, back = '/listening', children }: {
+  title: string
+  right?: React.ReactNode
+  back?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[96rem] items-center gap-3 px-4">
-          <Link to="/listening" aria-label="Về danh sách" className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 hover:bg-slate-100">
+          <Link to={back} aria-label="Về danh sách" className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 hover:bg-slate-100">
             <ChevronLeft className="h-6 w-6" />
           </Link>
           <h1 className="min-w-0 flex-1 truncate text-xl font-bold text-ink">{title}</h1>

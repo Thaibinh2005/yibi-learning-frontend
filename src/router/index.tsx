@@ -21,6 +21,7 @@ import { PracticePage } from '@/pages/user/PracticePage'
 import { PathLessonPage, PathLevelTestPage } from '@/pages/user/PathLessonPage'
 import { PathMistakesPage, PathMistakesReviewPage } from '@/pages/user/PathMistakesPage'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
+import { MockTestReviewPage } from '@/pages/admin/MockTestReviewPage'
 import { OnboardingSurveyPage } from '@/pages/user/placement/OnboardingSurveyPage'
 import { PlacementIntroPage } from '@/pages/user/placement/PlacementIntroPage'
 import { PlacementTestPage } from '@/pages/user/placement/PlacementTestPage'
@@ -31,6 +32,8 @@ import { PlacementHistoryPage } from '@/pages/user/placement/PlacementHistoryPag
 import { OnboardingGate } from './OnboardingGate'
 import { DashboardGate } from './DashboardGate'
 import { HskkPage } from '@/pages/user/HskkPage'
+import { AccountPage } from '@/pages/user/AccountPage'
+import { MockTestPage } from '@/pages/user/MockTestPage'
 import { ForgotPasswordPage, GoogleCallbackPage, ResetPasswordPage } from '@/pages/auth/AccountRecoveryPages'
 import { PrivateRoute } from './PrivateRoute'
 import { ListeningPage } from '@/pages/user/listening/ListeningPage'
@@ -113,6 +116,9 @@ export const router = createBrowserRouter([
           // ── Opening a listening lesson needs an account (full screen) ──
           { path: '/listening/:id/edit', element: <VideoEditorPage /> },
           { path: '/listening/:id', element: <VideoPracticePage /> },
+          { path: '/account', element: <AccountPage /> },
+          // An attempt at an official sample paper (full screen).
+          { path: '/exams/mock/:attemptId', element: <MockTestPage /> },
           {
             element: <OnboardingGate />,
             children: [
@@ -147,6 +153,10 @@ export const router = createBrowserRouter([
       {
         path: '/admin',
         element: <AdminDashboardPage />,
+      },
+      {
+        path: '/admin/mock-tests/:testId',
+        element: <MockTestReviewPage />,
       },
     ],
   },

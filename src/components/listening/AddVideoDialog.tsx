@@ -36,7 +36,12 @@ function mediaDuration(file: File): Promise<number | null> {
  * Adds the learner's own listening material: a YouTube link (its Chinese subtitles), an audio/video file (Whisper
  * writes the lines, or the learner types them), or typed text. "Bắt đầu luyện tập" opens the line editor.
  */
-export function AddVideoDialog({ usage, onClose }: { usage: ListeningUsage | null; onClose: () => void }) {
+export function AddVideoDialog({ usage, onClose, editorial = false }: {
+  usage: ListeningUsage | null
+  onClose: () => void
+  /** Opened from the admin library tab: the lesson is the team's, published from that tab. */
+  editorial?: boolean
+}) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('youtube')
   const [title, setTitle] = useState('')
@@ -149,7 +154,7 @@ export function AddVideoDialog({ usage, onClose }: { usage: ListeningUsage | nul
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="add-video-title" className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 id="add-video-title" className="text-xl font-bold text-ink">Thêm video luyện nghe</h2>
+          <h2 id="add-video-title" className="text-xl font-bold text-ink">{editorial ? 'Thêm video cho cộng đồng' : 'Thêm video luyện nghe'}</h2>
           <button type="button" onClick={onClose} disabled={busy} aria-label="Đóng" className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
             <X className="h-5 w-5" />
           </button>
@@ -188,7 +193,8 @@ export function AddVideoDialog({ usage, onClose }: { usage: ListeningUsage | nul
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-ink">{lesson.title}</span>
                       <span className="flex items-center gap-1 text-xs text-slate-500">
-                        {lesson.segmentCount} câu{lesson.contributorName ? ` · lời thoại @${lesson.contributorName}` : ''}
+                        {lesson.segmentCount} câu
+                        {lesson.editorial ? ' · Đội ngũ Yibi' : lesson.contributorName ? ` · lời thoại @${lesson.contributorName}` : ''}
                         {lesson.practiceCount > 0 && <><Users className="ml-1 h-3 w-3" /> {lesson.practiceCount}</>}
                       </span>
                     </span>
@@ -237,7 +243,9 @@ export function AddVideoDialog({ usage, onClose }: { usage: ListeningUsage | nul
 
           <label className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
             <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 accent-[#C8322B]" />
-            Bài luyện sẽ ở chế độ riêng tư. Tôi chỉ chia sẻ lên cộng đồng khi nội dung phù hợp và không vi phạm bản quyền.
+            {editorial
+              ? 'Tôi đã kiểm tra quyền sử dụng video. Bài được đăng dưới tên Đội ngũ Yibi sau khi tôi công khai ở tab Thư viện video.'
+              : 'Bài luyện sẽ ở chế độ riêng tư. Tôi chỉ chia sẻ lên cộng đồng khi nội dung phù hợp và không vi phạm bản quyền.'}
           </label>
 
           {usage && (

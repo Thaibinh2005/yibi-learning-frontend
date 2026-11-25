@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
+  Flag,
   Bookmark,
   BookmarkCheck,
   ExternalLink,
@@ -42,6 +43,8 @@ import {
 import { useAppSelector } from '@/app/hooks'
 import { VISIBILITY } from '@/components/listening/LessonCard'
 import { SubmitLessonDialog } from '@/components/listening/SubmitLessonDialog'
+import { ReportDialog } from '@/components/ui/ReportDialog'
+import type { ReportTarget } from '@/types/adminOps'
 import { SegmentPlayer, formatTime, speakChinese, type PlayerHandle } from '@/components/listening/SegmentPlayer'
 import { checkDictation, type DictationResult } from '@/components/listening/dictation'
 import { PRACTICE_MODES, type PracticeMode } from '@/components/listening/PracticeModeDialog'
@@ -96,6 +99,7 @@ export function VideoPracticePage() {
   const [fullscreen, setFullscreen] = useState(false)
   const [wordId, setWordId] = useState<number | null>(null)
   const [sharing, setSharing] = useState(false)
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: number; ref?: number; label: string } | null>(null)
   const isAdmin = useAppSelector((state) => state.auth.user?.role === 'ROLE_ADMIN')
 
   const load = useCallback(async () => {
@@ -239,6 +243,10 @@ export function VideoPracticePage() {
   }
 
   const segments = video.segments
+  // Someone else's lesson can only be fixed by reporting; one's own is simply edited.
+  const reportLine = video.editable
+    ? undefined
+    : (index: number) => setReporting({ type: 'LISTENING_SEGMENT', id: video.id, ref: index, label: `Câu ${index + 1}: ${segments[index]?.text ?? ''}` })
   const active = segments.findIndex((s) => s.start != null && s.end != null && time >= s.start && time < s.end)
   const controls: PlayerControls = { playing, rate, setRate, toggleSentence, playSentence }
   const sideBySide = size !== '100'
@@ -303,7 +311,11 @@ export function VideoPracticePage() {
       </div>
 
       <div ref={stage} className={fullscreen ? 'h-full overflow-y-auto bg-slate-50 p-4' : 'mx-auto w-full max-w-[96rem] px-4 pb-16 pt-4'}>
-        <Credits video={video} onWithdraw={() => void withdraw()} />
+        <Credits
+          video={video}
+          onWithdraw={() => void withdraw()}
+          onReport={video.editable ? undefined : () => setReporting({ type: 'LISTENING_LESSON', id: video.id, label: video.title })}
+        />
         <TranslationBanner video={video} onRetry={!video.editable ? undefined : async () => {
           try {
             setVideo(await translateVideo(id))
@@ -344,8 +356,8 @@ export function VideoPracticePage() {
           </div>
 
           <section className="min-w-0 flex-1">
-            {mode === 'dictation' && <DictationPanel key={`d-${id}`} segments={segments} controls={controls} />}
-            {mode === 'shadowing' && <ShadowingPanel key={`s-${id}`} videoId={id} segments={segments} controls={controls} onWord={setWordId} />}
+            {mode === 'dictation' && <DictationPanel key={`d-${id}`} segments={segments} controls={controls} onReport={reportLine} />}
+            {mode === 'shadowing' && <ShadowingPanel key={`s-${id}`} videoId={id} segments={segments} controls={controls} onWord={setWordId} onReport={reportLine} />}
             {mode === 'transcript' && (
               <TranscriptPanel
                 segments={segments}
@@ -359,12 +371,14 @@ export function VideoPracticePage() {
                 }}
                 onToggleVideo={() => player.current?.toggle()}
                 onWord={setWordId}
+                onReport={reportLine}
               />
             )}
           </section>
         </div>
       </div>
       {wordId !== null && <WordDetailModal vocabularyId={wordId} onClose={() => setWordId(null)} />}
+      {reporting && <ReportDialog target={reporting} onClose={() => setReporting(null)} />}
       {sharing && (
         <SubmitLessonDialog
           lesson={video}
@@ -384,7 +398,7 @@ export function VideoPracticePage() {
  * Who made what: the YouTube channel the video belongs to, the contributor of the lines, the categories; for the
  * contributor, where the lesson stands in review and the admin's note.
  */
-function Credits({ video, onWithdraw }: { video: VideoDetail; onWithdraw: () => void }) {
+function Credits({ video, onWithdraw, onReport }: { video: VideoDetail; onWithdraw: () => void; onReport?: () => void }) {
   const vis = VISIBILITY[video.visibility]
   return (
     <div className="mb-4 space-y-3">
@@ -407,13 +421,21 @@ function Credits({ video, onWithdraw }: { video: VideoDetail; onWithdraw: () => 
           </a>
         )}
         {video.contributorName && (
-          <span>Lời thoại: <b className="text-slate-700">{video.mine ? 'bạn' : `@${video.contributorName}`}</b></span>
+          <span>
+            {video.editorial ? 'Biên soạn' : 'Lời thoại'}:{' '}
+            <b className="text-slate-700">{video.editorial ? 'Đội ngũ Yibi' : video.mine ? 'bạn' : `@${video.contributorName}`}</b>
+          </span>
         )}
         {video.categories.map((c) => (
           <Link key={c.id} to={`/listening/c/${c.slug}`} className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 hover:bg-slate-200">
             {c.name}
           </Link>
         ))}
+        {onReport && (
+          <button type="button" onClick={onReport} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-brand">
+            <Flag className="h-3.5 w-3.5" /> Báo lỗi bài
+          </button>
+        )}
         {video.mine && video.visibility !== 'PRIVATE' && (
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${vis.className}`}>
             <vis.icon className="h-3.5 w-3.5" /> {vis.label}
@@ -521,7 +543,11 @@ function useAltP(action: () => void) {
 
 type Outcome = { result: DictationResult; score: number } | 'skipped'
 
-function DictationPanel({ segments, controls }: { segments: LearnerSegment[]; controls: PlayerControls }) {
+function DictationPanel({ segments, controls, onReport }: {
+  segments: LearnerSegment[]
+  controls: PlayerControls
+  onReport?: (index: number) => void
+}) {
   const [order, setOrder] = useState<number[]>(() => segments.map((_, i) => i))
   const [pos, setPos] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
@@ -732,6 +758,11 @@ function DictationPanel({ segments, controls }: { segments: LearnerSegment[]; co
               )}
             </div>
             <div className="rounded-2xl bg-slate-50 px-4 py-3">
+              {onReport && (
+                <button type="button" onClick={() => onReport(index)} className="float-right inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-brand">
+                  <Flag className="h-3.5 w-3.5" /> Báo lỗi câu này
+                </button>
+              )}
               <p className="text-xl text-slate-900">{segment.text}</p>
               {segment.pinyin && <p className="font-pinyin text-sm text-slate-500">{segment.pinyin}</p>}
               {segment.vi && <p className="mt-1 text-sm text-slate-600">{segment.vi}</p>}
@@ -746,11 +777,12 @@ function DictationPanel({ segments, controls }: { segments: LearnerSegment[]; co
 
 // ── Shadowing ─────────────────────────────────────────────────────────
 
-function ShadowingPanel({ videoId, segments, controls, onWord }: {
+function ShadowingPanel({ videoId, segments, controls, onWord, onReport }: {
   videoId: number
   segments: LearnerSegment[]
   controls: PlayerControls
   onWord: (id: number) => void
+  onReport?: (index: number) => void
 }) {
   const [index, setIndex] = useState(0)
   const [showVi, setShowVi] = useState(false)
@@ -794,7 +826,12 @@ function ShadowingPanel({ videoId, segments, controls, onWord }: {
         restartLabel="Đọc lại câu này"
       />
       <div className="p-4 sm:p-5">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-4">
+          {onReport && (
+            <button type="button" onClick={() => onReport(index)} className="inline-flex items-center gap-1 text-sm font-bold text-slate-400 hover:text-brand">
+              <Flag className="h-4 w-4" /> Báo lỗi
+            </button>
+          )}
           <button type="button" onClick={() => setShowVi((v) => !v)} className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-800">
             {showVi ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} {showVi ? 'Ẩn' : 'Hiện'} nghĩa
           </button>
@@ -841,13 +878,14 @@ function ShadowingPanel({ videoId, segments, controls, onWord }: {
 
 // ── Transcript ────────────────────────────────────────────────────────
 
-function TranscriptPanel({ segments, active, controls, onPlayFrom, onToggleVideo, onWord }: {
+function TranscriptPanel({ segments, active, controls, onPlayFrom, onToggleVideo, onWord, onReport }: {
   segments: LearnerSegment[]
   active: number
   controls: PlayerControls
   onPlayFrom: (s: LearnerSegment) => void
   onToggleVideo: () => void
   onWord: (id: number) => void
+  onReport?: (index: number) => void
 }) {
   const [showHanzi, setShowHanzi] = useState(true)
   const [showPinyin, setShowPinyin] = useState(true)
@@ -881,7 +919,7 @@ function TranscriptPanel({ segments, active, controls, onPlayFrom, onToggleVideo
       </div>
       <ol ref={list} className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
         {segments.map((s, i) => (
-          <li key={i} data-row={i} className={`flex gap-3 px-4 py-3 ${i === active ? 'bg-amber-50' : ''}`}>
+          <li key={i} data-row={i} className={`group flex gap-3 px-4 py-3 ${i === active ? 'bg-amber-50' : ''}`}>
             <button type="button" onClick={() => onPlayFrom(s)} aria-label={`Phát từ câu ${i + 1}`} className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-brand hover:text-white">
               <Play className="h-3.5 w-3.5" />
             </button>
@@ -892,6 +930,17 @@ function TranscriptPanel({ segments, active, controls, onPlayFrom, onToggleVideo
               {!showHanzi && !showPinyin && <p className="text-slate-300">••••••</p>}
               {showVi && <p className={`mt-1 text-sm ${s.vi ? 'text-slate-600' : 'italic text-slate-400'}`}>{s.vi ?? 'Chưa có bản dịch'}</p>}
             </div>
+            {onReport && (
+              <button
+                type="button"
+                onClick={() => onReport(i)}
+                aria-label={`Báo lỗi câu ${i + 1}`}
+                title="Báo lỗi câu này"
+                className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-300 opacity-60 transition hover:bg-rose-50 hover:text-brand group-hover:opacity-100 focus-visible:opacity-100"
+              >
+                <Flag className="h-3.5 w-3.5" />
+              </button>
+            )}
           </li>
         ))}
       </ol>

@@ -49,8 +49,9 @@ export const authApi = {
     return response.data
   },
 
-  refresh: async (refreshToken: string): Promise<ApiResponse<AuthResponse>> => {
-    const response = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/refresh', { refreshToken })
+  /** Uses the HttpOnly refresh cookie; the page never sees the refresh token. */
+  refresh: async (): Promise<ApiResponse<AuthResponse>> => {
+    const response = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/refresh')
     return response.data
   },
 }

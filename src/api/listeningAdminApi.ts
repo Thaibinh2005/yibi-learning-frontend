@@ -32,8 +32,10 @@ export const adminLessons = async (filter: {
   categoryId?: number
   q?: string
   page?: number
+  /** Only the lessons admins added (drafts included). */
+  editorial?: boolean
 }): Promise<AdminLessonPage> => {
-  const params = Object.fromEntries(Object.entries(filter).filter(([, v]) => v !== undefined && v !== ''))
+  const params = Object.fromEntries(Object.entries(filter).filter(([, v]) => v !== undefined && v !== '' && v !== false))
   return (await axiosClient.get<ApiResponse<AdminLessonPage>>(`${BASE}/lessons`, { params })).data.data
 }
 

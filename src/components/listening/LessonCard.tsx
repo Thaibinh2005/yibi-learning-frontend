@@ -138,7 +138,8 @@ export function LessonCard({ video, onOpen, onDelete, onToggleSave, onShare, cla
       <div className="mt-1 flex min-w-0 items-center gap-1 px-1 text-xs text-slate-500">
         <Icon className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{video.channelName ?? SOURCE_LABEL[video.source]}</span>
-        {!video.mine && video.contributorName && <span className="truncate">· lời thoại @{video.contributorName}</span>}
+        {!video.mine && video.editorial && <span className="shrink-0 font-semibold text-brand">· Đội ngũ Yibi</span>}
+        {!video.mine && !video.editorial && video.contributorName && <span className="truncate">· lời thoại @{video.contributorName}</span>}
         {video.saved && <span className="shrink-0 font-semibold text-brand">· Đã lưu</span>}
       </div>
       {onShare && canShare(video) && (

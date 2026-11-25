@@ -1,3 +1,4 @@
+import { TopicIcon } from '@/components/vocabulary/topicIcons'
 import React, { useState, useEffect, useCallback } from 'react'
 import { HighlightWord } from '@/components/ui/HighlightWord'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
@@ -155,22 +156,22 @@ export const VocabularyTopicDetailPage: React.FC = () => {
   /* ── Loading skeleton ── */
   if (isLoadingTopic) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white rounded-3xl p-8 border border-stone-200/80 animate-pulse space-y-4">
-            <div className="h-6 w-32 bg-stone-200 rounded-lg" />
-            <div className="h-10 w-3/4 bg-stone-200 rounded-lg" />
-            <div className="h-4 w-1/2 bg-stone-200 rounded-lg" />
+      <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="bg-white rounded-3xl p-8 border border-border animate-pulse space-y-4">
+            <div className="h-6 w-32 bg-gray-200 rounded-lg" />
+            <div className="h-10 w-3/4 bg-gray-200 rounded-lg" />
+            <div className="h-4 w-1/2 bg-gray-200 rounded-lg" />
           </div>
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl p-5 border border-stone-200/80 animate-pulse flex items-center gap-4"
+              className="bg-white rounded-2xl p-5 border border-border animate-pulse flex items-center gap-4"
             >
-              <div className="w-8 h-8 bg-stone-200 rounded-full" />
+              <div className="w-8 h-8 bg-gray-200 rounded-full" />
               <div className="flex-1 space-y-2">
-                <div className="h-6 w-20 bg-stone-200 rounded" />
-                <div className="h-4 w-40 bg-stone-200 rounded" />
+                <div className="h-6 w-20 bg-gray-200 rounded" />
+                <div className="h-4 w-40 bg-gray-200 rounded" />
               </div>
             </div>
           ))}
@@ -181,14 +182,14 @@ export const VocabularyTopicDetailPage: React.FC = () => {
 
   if (!topic) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 space-y-4">
+      <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="bg-white rounded-3xl p-12 text-center border border-border space-y-4">
             <div className="text-5xl">😕</div>
-            <h2 className="text-xl font-bold text-stone-800">
+            <h2 className="text-xl font-bold text-gray-800">
               Không tìm thấy chủ đề
             </h2>
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-gray-500">
               Chủ đề &ldquo;{slug}&rdquo; không tồn tại hoặc đã bị xóa.
             </p>
             <Button
@@ -205,42 +206,40 @@ export const VocabularyTopicDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-6">
         {/* ── BACK NAVIGATION ── */}
         <Link
           to="/vocabulary/topic"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 hover:text-[#C8322B] transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#C8322B] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Quay lại danh sách chủ đề
         </Link>
 
         {/* ── TOPIC HEADER ── */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-stone-200/80 relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-border relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full blur-3xl -z-0 opacity-50 pointer-events-none" />
 
           <div className="relative z-10 space-y-4">
             <div className="flex items-start gap-4">
-              <span className="text-4xl sm:text-5xl p-3 bg-stone-50 rounded-2xl border border-stone-200/50 flex-shrink-0">
-                {topic.icon || '📖'}
-              </span>
+              <TopicIcon emoji={topic.icon} toneKey={topic.slug ?? topic.titleVi} size="lg" />
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-3 py-1 rounded-xl bg-red-100 text-[#C8322B] text-xs font-bold">
                     {hskFilter || topic.hskLevel}
                   </span>
-                  <span className="text-xs font-semibold text-stone-500">
+                  <span className="text-xs font-semibold text-gray-500">
                     {topic.wordCount} từ vựng
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                   {topic.titleVi}{' '}
-                  <span className="text-lg font-medium text-stone-500">
+                  <span className="text-lg font-medium text-gray-500">
                     ({topic.titleZh})
                   </span>
                 </h1>
-                <p className="text-sm text-stone-600 leading-relaxed max-w-2xl">
+                <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
                   {topic.description}
                 </p>
               </div>
@@ -262,7 +261,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                 <GraduationCap className="w-4 h-4 mr-2" />
                 Học theo Flashcard
               </Button>
-              <div className="flex items-center gap-2 px-4 py-2 bg-stone-50 rounded-2xl border border-stone-200/60 text-xs font-medium text-stone-500">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-border text-xs font-medium text-gray-500">
                 <Layers className="w-3.5 h-3.5" />
                 Đã tải {vocabs.length}
                 {topic.wordCount ? ` / ${topic.wordCount}` : ''} từ
@@ -273,21 +272,21 @@ export const VocabularyTopicDetailPage: React.FC = () => {
 
         {/* ── VOCABULARY LIST ── */}
         <div className="space-y-3">
-          <h2 className="text-sm font-bold text-stone-700 flex items-center gap-2 px-1">
+          <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 px-1">
             <BookOpen className="w-4 h-4 text-[#C8322B]" />
             Danh sách từ vựng
           </h2>
 
           {/* Loading initial */}
           {isLoadingVocabs && vocabs.length === 0 ? (
-            <div className="bg-white rounded-3xl p-12 border border-stone-200/80 flex flex-col items-center justify-center gap-3 text-stone-500">
+            <div className="bg-white rounded-3xl p-12 border border-border flex flex-col items-center justify-center gap-3 text-gray-500">
               <Loader2 className="w-7 h-7 animate-spin text-[#C8322B]" />
               <span className="text-sm font-medium">
                 Đang nạp từ vựng của chủ đề...
               </span>
             </div>
           ) : vocabs.length === 0 ? (
-            <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 text-stone-500 text-sm">
+            <div className="bg-white rounded-3xl p-12 text-center border border-border text-gray-500 text-sm">
               Chưa có từ vựng nào trong chủ đề này.
             </div>
           ) : (
@@ -307,11 +306,11 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                         setOpenWordId(vocab.id)
                       }
                     }}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 hover:border-[#C8322B]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#C8322B]/30"
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-border hover:border-[#C8322B]/30 hover:shadow-sm transition-all flex items-center justify-between gap-4 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#C8322B]/30"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {/* Number badge */}
-                      <span className="w-9 h-9 rounded-full bg-stone-100 text-stone-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                      <span className="w-9 h-9 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
                         {index + 1}
                       </span>
 
@@ -319,7 +318,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-baseline gap-2.5 flex-wrap">
                           <span
-                            className="text-xl sm:text-2xl font-bold text-stone-900"
+                            className="text-xl sm:text-2xl font-bold text-gray-900"
                             style={{
                               fontFamily: "'Noto Serif SC', serif",
                             }}
@@ -332,24 +331,24 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                             </span>
                           )}
                           {vocab.levelCode && (
-                            <span className="px-2 py-0.5 rounded-lg bg-stone-100 text-stone-500 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold">
                               HSK {vocab.levelCode}
                             </span>
                           )}
                           {vocab.partOfSpeech && (
-                            <span className="text-[11px] font-medium text-stone-400 italic">
+                            <span className="text-[11px] font-medium text-gray-400 italic">
                               ({vocab.partOfSpeech})
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-stone-700 leading-snug truncate">
+                        <p className="text-sm text-gray-700 leading-snug truncate">
                           {shortMeaning(vocab.levelMeaning, vocab.meaningVi) || 'Chưa có nghĩa tiếng Việt'}
                         </p>
                         {vocab.exampleSentence && (
-                          <div className="mt-1.5 rounded-xl bg-stone-50 px-3 py-2 text-xs leading-relaxed">
+                          <div className="mt-1.5 rounded-xl bg-gray-50 px-3 py-2 text-xs leading-relaxed">
                             <div className="flex items-start justify-between gap-2">
                               <p
-                                className="text-sm text-stone-800"
+                                className="text-sm text-gray-800"
                                 style={{ fontFamily: "'Noto Serif SC', serif" }}
                               >
                                 <HighlightWord sentence={vocab.exampleSentence} word={vocab.hanzi} />
@@ -363,10 +362,10 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                               />
                             </div>
                             {vocab.examplePinyin && (
-                              <p className="text-stone-500">{vocab.examplePinyin}</p>
+                              <p className="text-gray-500">{vocab.examplePinyin}</p>
                             )}
                             {vocab.exampleTranslation && (
-                              <p className="italic text-stone-600">{vocab.exampleTranslation}</p>
+                              <p className="italic text-gray-600">{vocab.exampleTranslation}</p>
                             )}
                           </div>
                         )}
@@ -392,7 +391,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
                     variant="outline"
                     onClick={handleLoadMore}
                     disabled={isLoadingVocabs}
-                    className="rounded-2xl border-stone-300 hover:border-[#C8322B] hover:text-[#C8322B] px-8 py-3 text-sm font-semibold"
+                    className="rounded-2xl border-border hover:border-[#C8322B] hover:text-[#C8322B] px-8 py-3 text-sm font-semibold"
                   >
                     {isLoadingVocabs ? (
                       <>
@@ -408,7 +407,7 @@ export const VocabularyTopicDetailPage: React.FC = () => {
 
               {/* All loaded message */}
               {!hasMore && vocabs.length > 0 && (
-                <div className="pt-2 text-center text-xs text-stone-400 font-medium">
+                <div className="pt-2 text-center text-xs text-gray-400 font-medium">
                   ✓ Đã hiển thị tất cả {vocabs.length} từ vựng
                 </div>
               )}

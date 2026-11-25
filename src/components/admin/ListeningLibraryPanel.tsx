@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowDown,
@@ -14,6 +14,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
   Search,
   ShieldCheck,
   Trash2,
@@ -33,6 +34,7 @@ import {
   updateCategory,
 } from '@/api/listeningAdminApi'
 import { apiError } from '@/api/listeningApi'
+import { AddVideoDialog } from '@/components/listening/AddVideoDialog'
 import { VISIBILITY, clock } from '@/components/listening/LessonCard'
 import type { AdminLessonPage, AdminLessonRow, LessonVisibility, ListeningCategory } from '@/types/listening'
 
@@ -55,8 +57,10 @@ const RIGHTS_LABEL: Record<string, string> = {
 }
 
 /**
- * The community listening library for admins: the categories learners see (order, on/off, add, rename, delete) and
- * the review queue of lessons contributors sent (approve into 1–3 categories, reject with a note, hide, delete).
+ * The community listening library for admins: the categories learners see (order, on/off, add, rename, delete), the
+ * review queue of lessons contributors sent (approve into 1–3 categories, reject with a note, hide, delete), and the
+ * team's own lessons: "+ Thêm video" opens the same dialog and editor as learners use, and finishing in the editor
+ * comes back here (?publish=ID) to publish under "Đội ngũ Yibi".
  */
 export function ListeningLibraryPanel() {
   const [categories, setCategories] = useState<ListeningCategory[] | null>(null)
@@ -227,13 +231,17 @@ function CategoryEditor({ category, onCancel, onSaved }: { category: ListeningCa
 // ── Review queue ────────────────────────────────────────────────────────
 
 function ReviewQueue({ categories, onCategoriesChanged }: { categories: ListeningCategory[]; onCategoriesChanged: () => Promise<void> }) {
-  const [visibility, setVisibility] = useState<LessonVisibility | ''>('PENDING_REVIEW')
+  const [params, setParams] = useSearchParams()
+  const publishId = Number(params.get('publish')) || null
+  const [visibility, setVisibility] = useState<LessonVisibility | ''>(publishId ? '' : 'PENDING_REVIEW')
+  const [editorialOnly, setEditorialOnly] = useState(!!publishId)
+  const [adding, setAdding] = useState(false)
   const [categoryId, setCategoryId] = useState<number | undefined>()
   const [query, setQuery] = useState('')
   const [q, setQ] = useState('')
   const [page, setPage] = useState(0)
   const [data, setData] = useState<AdminLessonPage | null>(null)
-  const [approving, setApproving] = useState<AdminLessonRow | null>(null)
+  const [approvingId, setApprovingId] = useState<number | null>(null)
   const [rejecting, setRejecting] = useState<AdminLessonRow | null>(null)
 
   useEffect(() => {
@@ -243,15 +251,35 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
 
   const load = useCallback(async () => {
     try {
-      setData(await adminLessons({ visibility, categoryId, q, page }))
+      setData(await adminLessons({ visibility, categoryId, q, page, editorial: editorialOnly }))
     } catch (err) {
       toast.error('Không tải được danh sách bài', { description: apiError(err, 'Hãy thử lại.') })
     }
-  }, [visibility, categoryId, q, page])
+  }, [visibility, categoryId, q, page, editorialOnly])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  // Translations finish in the background: refresh while one runs, so "Công khai" unlocks by itself.
+  const translating = data?.lessons.some((l) => l.translationStatus === 'RUNNING')
+  useEffect(() => {
+    if (!translating) return
+    const timer = window.setInterval(() => void load(), 3000)
+    return () => window.clearInterval(timer)
+  }, [translating, load])
+
+  // Back from the editor with ?publish=ID: open the publish dialog for that lesson once.
+  useEffect(() => {
+    if (!publishId || !data) return
+    if (data.lessons.some((l) => l.id === publishId)) setApprovingId(publishId)
+    const next = new URLSearchParams(params)
+    next.delete('publish')
+    setParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [publishId, data])
+
+  const approving = approvingId !== null ? data?.lessons.find((l) => l.id === approvingId) ?? null : null
 
   const after = async () => {
     await Promise.all([load(), onCategoriesChanged()])
@@ -271,6 +299,15 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
     <section className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-xs">
       <div className="space-y-3 border-b border-slate-100 px-5 py-3">
         <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            aria-pressed={editorialOnly}
+            onClick={() => { setEditorialOnly((v) => !v); setVisibility(editorialOnly ? 'PENDING_REVIEW' : ''); setPage(0) }}
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition ${editorialOnly ? 'bg-[#C8322B] text-white' : 'bg-rose-50 text-[#C8322B] hover:bg-rose-100'}`}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Do admin đăng
+          </button>
+          <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden />
           {FILTERS.map((f) => (
             <button
               key={f.id || 'all'}
@@ -285,6 +322,13 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
               )}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[#C8322B] px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#a92822]"
+          >
+            <Plus className="h-4 w-4" /> Thêm video
+          </button>
         </div>
         <div className="flex flex-wrap gap-2">
           <label className="relative min-w-0 flex-1">
@@ -302,12 +346,15 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
         <div className="p-6"><Loader2 className="h-5 w-5 animate-spin text-slate-400" /></div>
       ) : data.lessons.length === 0 ? (
         <p className="px-5 py-10 text-center text-sm text-slate-500">
-          {visibility === 'PENDING_REVIEW' ? 'Không có bài nào chờ duyệt.' : 'Không có bài phù hợp.'}
+          {editorialOnly ? 'Chưa có bài nào do admin đăng. Bấm "Thêm video" để bắt đầu.'
+            : visibility === 'PENDING_REVIEW' ? 'Không có bài nào chờ duyệt.' : 'Không có bài phù hợp.'}
         </p>
       ) : (
         <ul className="divide-y divide-slate-100">
           {data.lessons.map((l) => {
-            const vis = VISIBILITY[l.visibility]
+            const vis = l.editorial && l.visibility === 'PRIVATE'
+              ? { ...VISIBILITY.PRIVATE, label: 'Bản nháp' }
+              : VISIBILITY[l.visibility]
             const translatedAll = l.segmentCount > 0 && l.translatedCount >= l.segmentCount
             return (
               <li key={l.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row">
@@ -326,7 +373,7 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
                     <p className="min-w-0 font-semibold text-slate-800">{l.title}</p>
                   </div>
                   <p className="text-xs text-slate-500">
-                    @{l.contributorName ?? 'ẩn danh'}
+                    {l.editorial ? <b className="text-[#C8322B]">Đội ngũ Yibi</b> : <>@{l.contributorName ?? 'ẩn danh'}</>}
                     {l.channelName && <> · kênh <b>{l.channelName}</b></>}
                     {' · '}{l.segmentCount} câu{l.durationSeconds != null && ` · ${clock(l.durationSeconds)}`}
                     {' · '}HSK {l.hskLevel ?? (l.estimatedLevel ? `${l.estimatedLevel} (ước tính)` : '—')}
@@ -356,12 +403,12 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
                       <Pencil className="h-3.5 w-3.5" /> Sửa lời thoại
                     </Link>
                     {l.visibility !== 'PUBLISHED' && (
-                      <button type="button" onClick={() => setApproving(l)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
-                        <Check className="h-3.5 w-3.5" /> {l.visibility === 'PENDING_REVIEW' ? 'Duyệt' : 'Công khai lại'}
+                      <button type="button" onClick={() => setApprovingId(l.id)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                        <Check className="h-3.5 w-3.5" /> {l.visibility === 'PENDING_REVIEW' ? 'Duyệt' : l.visibility === 'PRIVATE' ? 'Công khai' : 'Công khai lại'}
                       </button>
                     )}
                     {l.visibility === 'PUBLISHED' && (
-                      <button type="button" onClick={() => setApproving(l)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                      <button type="button" onClick={() => setApprovingId(l.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
                         Danh mục & thông tin
                       </button>
                     )}
@@ -409,10 +456,11 @@ function ReviewQueue({ categories, onCategoriesChanged }: { categories: Listenin
         <ApproveDialog
           lesson={approving}
           categories={categories}
-          onClose={() => setApproving(null)}
-          onDone={async () => { setApproving(null); await after() }}
+          onClose={() => setApprovingId(null)}
+          onDone={async () => { setApprovingId(null); await after() }}
         />
       )}
+      {adding && <AddVideoDialog usage={null} editorial onClose={() => setAdding(false)} />}
       {rejecting && (
         <RejectDialog
           lesson={rejecting}
@@ -459,7 +507,8 @@ function ApproveDialog({ lesson, categories, onClose, onDone }: {
   const [busy, setBusy] = useState(false)
   const published = lesson.visibility === 'PUBLISHED'
   const blocked = lesson.status !== 'READY' ? 'Bài chưa hoàn tất: mở trình sửa và bấm Hoàn tất trước.'
-    : lesson.translatedCount < lesson.segmentCount ? `Còn ${lesson.segmentCount - lesson.translatedCount} câu chưa dịch.` : null
+    : lesson.translationStatus === 'RUNNING' ? `Đang dịch tiếng Việt: ${lesson.translatedCount}/${lesson.segmentCount} câu. Nút Công khai sẽ mở khi dịch xong.`
+    : lesson.translatedCount < lesson.segmentCount ? `Còn ${lesson.segmentCount - lesson.translatedCount} câu chưa dịch. Mở trình sửa và bấm "Dịch tiếp".` : null
 
   const toggle = (id: number) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 3 ? p : [...p, id]))
 
@@ -483,7 +532,7 @@ function ApproveDialog({ lesson, categories, onClose, onDone }: {
 
   return (
     <Modal
-      title={published ? 'Danh mục & thông tin bài' : 'Duyệt và công khai'}
+      title={published ? 'Danh mục & thông tin bài' : lesson.editorial ? 'Công khai bài của Đội ngũ Yibi' : 'Duyệt và công khai'}
       onClose={onClose}
       footer={
         <>

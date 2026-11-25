@@ -15,12 +15,15 @@ import {
   Menu,
   X,
   Lightbulb,
+  UserRound,
 } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout } from '@/app/slices/authSlice'
 import { authApi } from '@/api/authApi'
 import { getLearningPathOverview, getStudyStats, recordStudyActivity, type StudyStats } from '@/api/learningPathApi'
 import { GoalRing } from '@/components/learningpath/GoalRing'
+import { Avatar } from '@/components/ui/Avatar'
+import { SiteFooter } from './SiteFooter'
 import { levelLabel } from '@/components/learningpath/GoalForm'
 
 interface NavItem {
@@ -48,7 +51,7 @@ const VOCABULARY_SUB_ITEMS = [
 ]
 
 /** These pages take the whole screen, so nothing competes with the question being answered or the card being studied. */
-const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards|listening\/\d+)/
+const FOCUS_PAGES = /^\/(learning-path\/(lesson\/|level-test\/|mistakes\/review)|exams\/mock\/|flashcards\/review|vocabulary\/topic\/[^/]+\/flashcards|listening\/\d+)/
 
 const navRow = (active: boolean) =>
   `flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-[15px] font-bold transition-colors ${
@@ -62,6 +65,7 @@ export const UserLayout: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user)
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const [studyStats, setStudyStats] = useState<StudyStats | null>(null)
+  const shownName = user?.displayName || user?.username
   const [pathLevel, setPathLevel] = useState<number | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -70,6 +74,7 @@ export const UserLayout: React.FC = () => {
   const [isVocabOpen, setIsVocabOpen] = useState(isInsideVocab)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const focused = FOCUS_PAGES.test(location.pathname)
+  const isHome = location.pathname === '/dashboard' || location.pathname === '/'
 
   // Study time counts only while the page is visible and the learner has been active in the last two minutes.
   useEffect(() => {
@@ -164,7 +169,7 @@ export const UserLayout: React.FC = () => {
         <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden border-r-2 border-slate-200/70 bg-white transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden border-r border-border bg-white transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-20 shrink-0 items-center justify-between px-5">
           <Link to="/dashboard" className="group flex items-center gap-3">
             <img src="/logo-yibi.png" alt="" width={48} height={48} className="h-12 w-12 shrink-0 transition-transform group-hover:-rotate-6" />
@@ -217,24 +222,73 @@ export const UserLayout: React.FC = () => {
           </Link>
         </nav>
 
-        <div className="shrink-0 p-3">
-          {!isAuthenticated ? (
-            <Link to="/login" className="block rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
+        {!isAuthenticated ? (
+          <div className="shrink-0 border-t border-border p-3">
+            <Link to="/login" className="block rounded-2xl border border-border p-3 transition-colors hover:bg-slate-50">
               <span className="block text-sm font-extrabold text-slate-800">Chưa đăng nhập</span>
               <span className="block text-xs font-medium text-slate-500">Đăng nhập để lưu tiến độ học</span>
             </Link>
-          ) : (
-          <Link to="/dashboard" className="flex items-center gap-3 rounded-2xl border-2 border-slate-200/70 p-3 transition-colors hover:bg-slate-50">
-            <GoalRing percent={goalPercent} size={52} stroke={6}>
-              <span className="text-[11px] font-extrabold tabular-nums text-slate-800">{goalPercent}%</span>
-            </GoalRing>
-            <span className="min-w-0">
-              <span className="block text-sm font-extrabold text-slate-800">Hôm nay</span>
-              <span className="block text-xs font-medium tabular-nums text-slate-500">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút · {levelLabel(level)}</span>
-            </span>
-          </Link>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="shrink-0 px-3 pb-3">
+              <Link to="/dashboard" className="flex items-center gap-3 rounded-2xl border border-border p-3 transition-colors hover:bg-slate-50">
+                <GoalRing percent={goalPercent} size={44} stroke={5}>
+                  <span className="text-[10px] font-extrabold tabular-nums text-slate-800">{goalPercent}%</span>
+                </GoalRing>
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold text-slate-800">Hôm nay</span>
+                  <span className="block text-xs font-medium tabular-nums text-slate-500">{studyStats?.todayMinutes ?? 0}/{studyStats?.dailyGoalMinutes ?? 0} phút · {levelLabel(level)}</span>
+                </span>
+              </Link>
+            </div>
+
+            {/* The account sits at the foot of the sidebar; its menu opens upwards. */}
+            <div className="relative shrink-0 border-t border-border bg-white px-3 py-3" ref={dropdownRef}>
+              {isDropdownOpen && (
+                <div className="animate-fade-in absolute inset-x-3 bottom-full z-50 mb-2 divide-y divide-slate-100 rounded-2xl border border-border bg-white py-1.5 shadow-lg">
+                  <div className="px-4 py-2.5">
+                    <p className="truncate text-xs text-slate-500">{user?.email}</p>
+                    <span className="mt-1.5 inline-block rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-brand">{levelLabel(level)}</span>
+                  </div>
+                  <div className="py-1">
+                    <Link to="/account" onClick={() => setIsDropdownOpen(false)} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                      <UserRound className="h-4 w-4" />
+                      Tài khoản
+                    </Link>
+                    {user?.role === 'ROLE_ADMIN' && (
+                      <Link to="/admin" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-50">
+                        <ExternalLink className="h-4 w-4" />
+                        Trang quản trị
+                      </Link>
+                    )}
+                  </div>
+                  <div className="py-1">
+                    <button onClick={handleLogout} disabled={isLoggingOut} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50">
+                      <LogOut className="h-4 w-4" />
+                      {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen((value) => !value)}
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="menu"
+                aria-label="Tài khoản"
+                className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-100 ${isDropdownOpen ? 'bg-slate-100' : ''}`}
+              >
+                <Avatar name={shownName} src={user?.avatarUrl} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-slate-800">{shownName || 'Học viên'}</span>
+                  <span className="block truncate text-xs font-medium text-slate-500">{user?.role === 'ROLE_ADMIN' ? 'Quản trị viên' : 'Học viên'}</span>
+                </span>
+                <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? '' : 'rotate-180'}`} />
+              </button>
+            </div>
+          </>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col md:pl-64">
@@ -254,48 +308,23 @@ export const UserLayout: React.FC = () => {
               <Flame className="h-5 w-5 fill-orange-500 text-orange-500" />
               {studyStats?.streakDays ?? 0}
             </span>
-
-            <div className="relative" ref={dropdownRef}>
-              <button onClick={() => setIsDropdownOpen((value) => !value)} className="flex items-center gap-1.5 rounded-xl p-1 transition-colors hover:bg-slate-100 focus:outline-none" aria-expanded={isDropdownOpen} aria-label="Tài khoản">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-sm font-bold text-white">{user?.username ? user.username.charAt(0).toUpperCase() : 'U'}</span>
-                <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isDropdownOpen && (
-                <div className="animate-fade-in absolute right-0 z-50 mt-2 w-60 divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-lg">
-                  <div className="px-4 py-2.5">
-                    <p className="truncate text-sm font-bold text-slate-800">{user?.username || 'Học viên'}</p>
-                    <p className="mt-0.5 truncate text-xs text-slate-500">{user?.email}</p>
-                    <span className="mt-2 inline-block rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-brand">{levelLabel(level)}</span>
-                  </div>
-                  <div className="py-1">
-                    {user?.role === 'ROLE_ADMIN' && (
-                      <Link to="/admin" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-50">
-                        <ExternalLink className="h-4 w-4" />
-                        Trang quản trị
-                      </Link>
-                    )}
-                  </div>
-                  <div className="py-1">
-                    <button onClick={handleLogout} disabled={isLoggingOut} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50">
-                      <LogOut className="h-4 w-4" />
-                      {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
           )}
         </header>
 
-        <main className="animate-fade-in mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-2 sm:px-6 md:pb-10 lg:px-8">
+        {/* Only the home page has the footer; elsewhere the page ends with its content (clear of the phone's bottom bar). */}
+        <main className={`animate-fade-in mx-auto w-full max-w-7xl flex-1 px-4 pt-2 sm:px-6 lg:px-8 ${isHome ? 'pb-2' : 'pb-24 md:pb-10'}`}>
           <Outlet />
         </main>
+        {isHome && (
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SiteFooter />
+          </div>
+        )}
       </div>
 
       {/* The sidebar is off-screen on a phone, so the main places stay under the thumb. */}
-      <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t-2 border-slate-200/70 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {[...NAV_ITEMS, { label: 'Từ vựng', path: '/vocabulary/daily', icon: BookMarked, isActive: startsWith('/vocabulary') }].map(({ label, path, icon: Icon, isActive }) => {
           const active = isActive(location.pathname)
           return (

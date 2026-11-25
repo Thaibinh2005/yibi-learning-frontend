@@ -243,6 +243,12 @@ export interface StudyStats {
   targetScore?: number | null
   bestTowardTarget?: number | null
   targetScale?: number | null
+  /** Flashcards and writing cards reviewed today. */
+  cardsReviewedToday: number
+  /** Minutes over the 7 days shown, and on how many of them the goal was met. */
+  weekMinutes: number
+  weekGoalDays: number
+  longestStreak: number
 }
 
 export const getStudyStats = async () =>

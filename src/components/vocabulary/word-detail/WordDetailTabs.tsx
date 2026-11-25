@@ -1,3 +1,4 @@
+import { topicIcon } from '@/components/vocabulary/topicIcons'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, Info, LogIn, Play } from 'lucide-react'
@@ -302,9 +303,9 @@ export const PhrasesTab: React.FC<{
               <Link
                 key={t.slug}
                 to={`/vocabulary/topic/${t.slug}`}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
-                {t.icon} {t.titleVi}
+                {React.createElement(topicIcon(t.icon), { className: 'h-3.5 w-3.5 text-slate-500', 'aria-hidden': true })}{t.titleVi}
               </Link>
             ))}
           </div>

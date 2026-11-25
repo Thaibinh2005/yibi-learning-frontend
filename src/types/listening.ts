@@ -64,8 +64,11 @@ export interface VideoSummary {
   saved: boolean
   /** The YouTube channel the video belongs to; nobody in the app owns it. */
   channelName?: string
+  /** The team's name when `editorial`. */
   contributorName?: string
   practiceCount: number
+  /** Added by an admin for the community; credited to "Đội ngũ Yibi". */
+  editorial: boolean
 }
 
 export interface CategoryRef {
@@ -136,6 +139,7 @@ export interface VideoDetail {
   reviewNote?: string
   hskLevel?: string
   categories: CategoryRef[]
+  editorial: boolean
 }
 
 export interface ShadowingResult {
@@ -169,6 +173,7 @@ export interface AdminLessonRow {
   publishedAt?: string
   practiceCount: number
   saveCount: number
+  editorial: boolean
 }
 
 export interface AdminLessonPage {

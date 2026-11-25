@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Sparkles,
   Database,
   BarChart3,
-  Captions,
   Library,
+  FileAudio,
+  Users as UsersIcon,
+  Flag as FlagIcon,
+  Activity as ActivityIcon,
+  ScrollText as ScrollTextIcon,
   Search,
   CheckCircle2,
   AlertCircle,
@@ -48,8 +52,9 @@ import type {
 import { AudioButton } from '@/components/ui/AudioButton'
 import { AiGeneratorPanel } from '@/components/admin/AiGeneratorPanel'
 import { PoolCoveragePanel } from '@/components/admin/PoolCoveragePanel'
-import { VideoTranscriptPanel } from '@/components/admin/VideoTranscriptPanel'
 import { ListeningLibraryPanel } from '@/components/admin/ListeningLibraryPanel'
+import { MockTestAdminPanel } from '@/components/admin/MockTestAdminPanel'
+import { AuditPanel, ReportsPanel, SystemPanel, UsersPanel } from '@/components/admin/AdminOpsPanels'
 import { useAppSelector } from '@/app/hooks'
 
 const HSK_LEVELS = ['1', '2', '3', '4', '5', '6', '7-9']
@@ -62,9 +67,25 @@ const QUESTION_TYPES = [
   { id: 'GRAMMAR_SELECT', name: 'Chọn cấu trúc ngữ pháp', badge: 'Ngữ pháp' },
 ]
 
+type AdminTab = 'generator' | 'repository' | 'coverage' | 'analytics' | 'library' | 'mocktests' | 'users' | 'reports' | 'system' | 'audit'
+
+/** Running the site: users, learners' error reports, system status, the admin audit log. */
+const OPS_TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
+  { id: 'mocktests', label: 'Đề thi mẫu', icon: FileAudio },
+  { id: 'users', label: 'Người dùng', icon: UsersIcon },
+  { id: 'reports', label: 'Báo lỗi', icon: FlagIcon },
+  { id: 'system', label: 'Hệ thống', icon: ActivityIcon },
+  { id: 'audit', label: 'Nhật ký', icon: ScrollTextIcon },
+]
+
 export const AdminDashboardPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth)
-  const [activeTab, setActiveTab] = useState<'generator' | 'repository' | 'coverage' | 'analytics' | 'videos' | 'library'>('generator')
+  // ?tab=… opens a tab directly (the listening editor sends the team's lessons back to ?tab=library).
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    const wanted = searchParams.get('tab')
+    return (OPS_TABS.some((t) => t.id === wanted) || wanted === 'library' ? wanted : 'generator') as AdminTab
+  })
   const [genSource, setGenSource] = useState<'rules' | 'ai'>('rules')
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -410,18 +431,6 @@ export const AdminDashboardPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('videos')}
-            className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-              activeTab === 'videos'
-                ? 'border-[#C8322B] text-[#C8322B]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Captions className="w-4 h-4" />
-            <span>Phụ đề video</span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('library')}
             className={`flex items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'library'
@@ -432,6 +441,19 @@ export const AdminDashboardPage: React.FC = () => {
             <Library className="w-4 h-4" />
             <span>Thư viện video</span>
           </button>
+
+          {OPS_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex shrink-0 items-center gap-2 py-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+                activeTab === id ? 'border-[#C8322B] text-[#C8322B]' : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -792,9 +814,12 @@ export const AdminDashboardPage: React.FC = () => {
 
         {activeTab === 'coverage' && <PoolCoveragePanel />}
 
-        {activeTab === 'videos' && <VideoTranscriptPanel />}
-
         {activeTab === 'library' && <ListeningLibraryPanel />}
+        {activeTab === 'mocktests' && <MockTestAdminPanel />}
+        {activeTab === 'users' && <UsersPanel />}
+        {activeTab === 'reports' && <ReportsPanel />}
+        {activeTab === 'system' && <SystemPanel />}
+        {activeTab === 'audit' && <AuditPanel />}
 
         {/* ======================================================== */}
         {/* TAB 2: QUESTION BANK REPOSITORY                          */}
