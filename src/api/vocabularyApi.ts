@@ -25,6 +25,14 @@ export const getVocabularyById = async (
   return response.data
 }
 
+/** The words of one lesson in lesson order, each as the record the flashcard deck links it to. */
+export const getLessonVocabularies = async (
+  lessonId: number
+): Promise<ApiResponse<Vocabulary[]>> => {
+  const response = await axiosClient.get<ApiResponse<Vocabulary[]>>(`/vocabularies/lesson/${lessonId}`)
+  return response.data
+}
+
 export const getDailyVocabularies = async (
   params?: { hskLevel?: string; days?: number }
 ): Promise<ApiResponse<DailyVocabulary[]>> => {

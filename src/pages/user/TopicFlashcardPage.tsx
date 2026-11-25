@@ -1,89 +1,80 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Eye, LoaderCircle, RotateCcw, Sparkles, Trophy } from 'lucide-react'
+import { LoaderCircle, Sparkles } from 'lucide-react'
 import { getTopicBySlug, getVocabulariesByTopic } from '@/api/topicApi'
-import { rateVocabulary, type SrsRating } from '@/api/srsApi'
-import { useAppSelector } from '@/app/hooks'
 import { LessonFrame } from '@/components/learningpath/LessonFrame'
-import {
-  ExampleSentence,
-  FlipCard,
-  isCardShortcut,
-  RATING_BUTTONS,
-  RatingButtons,
-  WordAudio,
-  MeasureWordList,
-  formatNextReview,
-} from '@/components/flashcard/FlashcardParts'
-import { LevelMeaningBlock } from '@/components/flashcard/LevelMeaning'
+import { CardSessionView } from '@/components/flashcard/CardSessionView'
+import { useCardSession } from '@/components/flashcard/useCardSession'
 import type { VocabTopic } from '@/types/topic'
 import type { Vocabulary } from '@/types/vocabulary'
 
 const PAGE_SIZE = 100
 const MAX_PAGES = 20
-const RELEARN_DELAY_MS = 10 * 60 * 1000
 
-interface QueueItem {
-  /** Unique per queue entry so a card can be pinned while it is on screen. */
-  key: number
-  vocab: Vocabulary
-  /** Earliest time this card should be shown again (ms since epoch). */
-  availableAt: number
+interface SessionProps {
+  words: Vocabulary[]
+  topic: VocabTopic | null
+  hskFilter?: string
+  backTo: string
 }
 
-/** Pick the first card that is due; if none is due yet, show the one due soonest. */
-const pickNext = (queue: QueueItem[], now: number): QueueItem | undefined => {
-  if (queue.length === 0) return undefined
-  const due = queue.find((q) => q.availableAt <= now)
-  if (due) return due
-  return queue.reduce((best, q) => (q.availableAt < best.availableAt ? q : best))
+/** Mounted once the words are loaded, so the session starts from the full list. */
+const TopicSession: React.FC<SessionProps> = ({ words, topic, hskFilter, backTo }) => {
+  const session = useCardSession(words)
+  const { total, learned, remaining } = session
+
+  return (
+    // A page of its own without the menus (see UserLayout FOCUS_PAGES): only the cards, a way out and the progress.
+    <LessonFrame
+      label={`${topic?.titleVi || 'Chủ đề'}${hskFilter ? ` · ${hskFilter}` : ''}`.trim()}
+      progress={total > 0 ? learned / total : undefined}
+      counter={total > 0 ? `Còn ${remaining}/${total}` : undefined}
+      exitTo={backTo}
+    >
+      <CardSessionView
+        session={session}
+        doneTitle="Hoàn thành chủ đề!"
+        doneText={`Bạn đã học ${total} từ. Kết quả đã được lưu vào bộ Flashcard để ôn đúng lịch.`}
+        doneActions={
+          <Link
+            to="/flashcards"
+            className="btn-chunky btn-brand"
+          >
+            <Sparkles className="h-4 w-4" />
+            Mở bộ Flashcard
+          </Link>
+        }
+        empty={
+          <>
+            Chủ đề này chưa có từ vựng{hskFilter ? ` ở cấp ${hskFilter}` : ''}.
+            <div>
+              <Link to={backTo} className="mt-4 inline-block font-semibold text-brand">
+                Về chủ đề
+              </Link>
+            </div>
+          </>
+        }
+      />
+    </LessonFrame>
+  )
 }
-
-/** Some sources number homographs (会1, 点1); never show the digit to learners. */
-const displayHanzi = (hanzi: string) => hanzi.replace(/[0-9]+$/, '')
-
-/** Layout shared by both faces of the card. */
-const FACE = 'flex min-h-72 w-full flex-col items-center justify-center rounded-2xl px-6 py-10 text-center transition-colors'
-
-let queueKeySeq = 0
 
 export const TopicFlashcardPage: React.FC = () => {
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
   const hskFilter = searchParams.get('hsk') || undefined
   const backTo = `/vocabulary/topic/${slug}${hskFilter ? `?hsk=${encodeURIComponent(hskFilter)}` : ''}`
 
   const [topic, setTopic] = useState<VocabTopic | null>(null)
-  const [words, setWords] = useState<Vocabulary[]>([])
-  const [queue, setQueue] = useState<QueueItem[]>([])
-  const [revealed, setRevealed] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [words, setWords] = useState<Vocabulary[] | null>(null)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [counts, setCounts] = useState<Record<SrsRating, number>>({ AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 })
-  const [now, setNow] = useState(() => Date.now())
-  // Card currently on screen. Pinned until it is rated so the 10-minute timer
-  // can never swap the card while the learner is reading it.
-  const [currentKey, setCurrentKey] = useState<number | null>(null)
-
-  const startSession = useCallback((list: Vocabulary[]) => {
-    const t = Date.now()
-    setQueue(list.map((vocab) => ({ key: ++queueKeySeq, vocab, availableAt: t })))
-    setCurrentKey(null)
-    setCounts({ AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 })
-    setRevealed(false)
-    setNotice('')
-    setNow(t)
-  }, [])
 
   /* Load topic + every word of the topic (paged). */
   useEffect(() => {
     if (!slug) return
     let cancelled = false
     const load = async () => {
-      setLoading(true)
+      setWords(null)
       setError('')
       try {
         const topicRes = await getTopicBySlug(slug, hskFilter)
@@ -96,235 +87,32 @@ export const TopicFlashcardPage: React.FC = () => {
           all.push(...res.data)
           if (res.data.length < PAGE_SIZE) break
         }
-        if (!cancelled) {
-          setWords(all)
-          startSession(all)
-        }
+        if (!cancelled) setWords(all)
       } catch {
         if (!cancelled) setError('Không tải được từ vựng của chủ đề. Hãy thử tải lại trang.')
-      } finally {
-        if (!cancelled) setLoading(false)
       }
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [slug, hskFilter, startSession])
+  }, [slug, hskFilter])
 
-  /* Tick so "Học lại" cards come back once their 10 minutes are up. */
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 15_000)
-    return () => window.clearInterval(id)
-  }, [])
-
-  const pinned = useMemo(() => queue.find((q) => q.key === currentKey), [queue, currentKey])
-  const current = pinned ?? pickNext(queue, now)
-
-  useEffect(() => {
-    if (current && current.key !== currentKey) setCurrentKey(current.key)
-  }, [current, currentKey])
-  const learned = counts.HARD + counts.GOOD + counts.EASY
-  const total = words.length
-
-  const rate = useCallback(
-    async (rating: SrsRating) => {
-      if (!current || saving) return
-      setSaving(true)
-      setError('')
-      let intervalDays: number | undefined
-      // A guest practises without saving; only a signed-in learner's ratings go to their review deck.
-      if (isAuthenticated) try {
-        const card = await rateVocabulary(current.vocab.id, rating)
-        intervalDays = card?.intervalDays
-      } catch {
-        setError('Chưa lưu được kết quả lên máy chủ — tiến độ phiên học vẫn được giữ.')
-      }
-      const t = Date.now()
-      setQueue((prev) => {
-        const rest = prev.filter((q) => q.key !== current.key)
-        return rating === 'AGAIN'
-          ? [...rest, { key: ++queueKeySeq, vocab: current.vocab, availableAt: t + RELEARN_DELAY_MS }]
-          : rest
-      })
-      setCurrentKey(null)
-      setCounts((c) => ({ ...c, [rating]: c[rating] + 1 }))
-      setNotice(`${displayHanzi(current.vocab.hanzi)}: ${formatNextReview(rating, intervalDays)}`)
-      setRevealed(false)
-      setNow(t)
-      setSaving(false)
-    },
-    [current, saving, isAuthenticated]
-  )
-
-  /* Keyboard: Space/Enter = lật thẻ (cả hai chiều), 1-4 = chọn mức độ. */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!current || !isCardShortcut(e)) return
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault()
-        setRevealed((r) => !r)
-        return
-      }
-      if (!revealed) return
-      const btn = RATING_BUTTONS.find((b) => b.key === e.key)
-      if (btn) rate(btn.rating)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [current, revealed, rate])
-
-  const waitingMinutes =
-    current && current.availableAt > now ? Math.ceil((current.availableAt - now) / 60000) : 0
+  if (words) return <TopicSession key={`${slug}|${hskFilter ?? ''}`} words={words} topic={topic} hskFilter={hskFilter} backTo={backTo} />
 
   return (
-    // A page of its own without the menus (see UserLayout FOCUS_PAGES): only the cards, a way out and the progress.
     <LessonFrame
       label={`${topic?.titleVi || 'Chủ đề'}${hskFilter ? ` · ${hskFilter}` : ''}`.trim()}
-      progress={total > 0 ? learned / total : undefined}
-      counter={total > 0 ? `Còn ${queue.length}/${total}` : undefined}
       exitTo={backTo}
     >
-      <div className="space-y-5">
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
-
-
-      {loading ? (
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+      ) : (
         <div className="flex items-center justify-center gap-2 rounded-3xl border border-stone-200 bg-white p-16 text-sm text-stone-500">
           <LoaderCircle className="h-4 w-4 animate-spin" />
           Đang tải flashcard...
         </div>
-      ) : current ? (
-        <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-center justify-between text-xs text-stone-400">
-            <span>{notice || 'Bấm vào thẻ hoặc nhấn Space để lật'}</span>
-            {current.vocab.levelCode && (
-              <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-600">
-                HSK {current.vocab.levelCode}
-              </span>
-            )}
-          </div>
-
-          {waitingMinutes > 0 && (
-            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-700">
-              Bạn đã đi hết các thẻ mới — thẻ này còn {waitingMinutes} phút nữa mới đến lượt, ôn sớm cũng được.
-            </p>
-          )}
-
-          <FlipCard
-            key={current.key}
-            flipped={revealed}
-            onFlip={() => setRevealed((r) => !r)}
-            className="my-6"
-            frontClassName={`${FACE} bg-stone-50 hover:bg-stone-100`}
-            backClassName={`${FACE} border border-stone-200 bg-white`}
-            front={
-              <>
-                <span
-                  className="text-6xl font-bold tracking-wide text-stone-900 sm:text-7xl"
-                  style={{ fontFamily: "'Noto Serif SC', serif" }}
-                >
-                  {displayHanzi(current.vocab.hanzi)}
-                </span>
-                <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
-                <span className="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-stone-400">
-                  <Eye className="h-4 w-4" />
-                  Nhấn để xem phiên âm và nghĩa
-                </span>
-              </>
-            }
-            back={
-              <>
-                <span
-                  className="text-5xl font-bold tracking-wide text-stone-900 sm:text-6xl"
-                  style={{ fontFamily: "'Noto Serif SC', serif" }}
-                >
-                  {displayHanzi(current.vocab.hanzi)}
-                </span>
-                <WordAudio hanzi={displayHanzi(current.vocab.hanzi)} audioUrl={current.vocab.audioUrl} />
-                <p className="font-pinyin mt-5 text-xl font-semibold text-[#C8322B]">{current.vocab.pinyin}</p>
-                <LevelMeaningBlock
-                  levelMeaning={current.vocab.levelMeaning}
-                  meaningVi={current.vocab.meaningVi}
-                  partOfSpeech={current.vocab.partOfSpeech}
-                />
-                <MeasureWordList items={current.vocab.measureWords} />
-                <ExampleSentence
-                  word={displayHanzi(current.vocab.hanzi)}
-                  sentence={current.vocab.exampleSentence}
-                  pinyin={current.vocab.examplePinyin}
-                  translation={current.vocab.exampleTranslation}
-                  audioUrl={current.vocab.exampleAudioUrl}
-                />
-              </>
-            }
-          />
-
-          {revealed ? (
-            <RatingButtons disabled={saving} onRate={rate} />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setRevealed(true)}
-              className="w-full rounded-xl bg-[#C8322B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#9B2323]"
-            >
-              Lật thẻ
-            </button>
-          )}
-
-          {saving && (
-            <p className="mt-3 flex items-center justify-center gap-2 text-xs text-stone-400">
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-              Đang lưu kết quả...
-            </p>
-          )}
-        </div>
-      ) : total === 0 ? (
-        <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-10 text-center text-sm text-stone-500">
-          Chủ đề này chưa có từ vựng{hskFilter ? ` ở cấp ${hskFilter}` : ''}.
-          <div>
-            <Link to={backTo} className="mt-4 inline-block font-semibold text-[#C8322B]">
-              Về chủ đề
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-3xl border border-stone-200 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-50 text-amber-500">
-            <Trophy className="h-7 w-7" />
-          </div>
-          <h2 className="mt-4 text-lg font-bold text-stone-800">Hoàn thành chủ đề!</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Bạn đã học {total} từ. Kết quả đã được lưu vào bộ Flashcard để ôn đúng lịch.
-          </p>
-          <div className="mx-auto mt-5 grid max-w-md grid-cols-4 gap-2 text-xs">
-            {RATING_BUTTONS.map((b) => (
-              <div key={b.rating} className={`rounded-xl border px-2 py-2 ${b.className}`}>
-                <div className="text-lg font-bold">{counts[b.rating]}</div>
-                <div>{b.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => startSession(words)}
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Học lại từ đầu
-            </button>
-            <Link
-              to="/flashcards"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#C8322B] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#9B2323]"
-            >
-              <Sparkles className="h-4 w-4" />
-              Mở bộ Flashcard
-            </Link>
-          </div>
-        </div>
       )}
-      </div>
     </LessonFrame>
   )
 }

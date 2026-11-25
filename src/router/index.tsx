@@ -11,6 +11,8 @@ import { LearningTipsPage } from '@/pages/user/LearningTipsPage'
 import { VocabularyTopicPage } from '@/pages/user/VocabularyTopicPage'
 import { VocabularyTopicDetailPage } from '@/pages/user/VocabularyTopicDetailPage'
 import { TopicFlashcardPage } from '@/pages/user/TopicFlashcardPage'
+import { LessonFlashcardPage } from '@/pages/user/LessonFlashcardPage'
+import { LessonQuizPage } from '@/pages/user/LessonQuizPage'
 import { DailyVocabularyPage } from '@/pages/user/DailyVocabularyPage'
 import { HanziWritingPage } from '@/pages/user/HanziWritingPage'
 import { FlashcardPage } from '@/pages/user/FlashcardPage'
@@ -96,6 +98,8 @@ export const router = createBrowserRouter([
           { path: '/vocabulary/topic', element: <VocabularyTopicPage /> },
           { path: '/vocabulary/topic/:slug', element: <VocabularyTopicDetailPage /> },
           { path: '/vocabulary/topic/:slug/flashcards', element: <TopicFlashcardPage /> },
+          { path: '/courses/lessons/:lessonId/flashcards', element: <LessonFlashcardPage /> },
+          { path: '/courses/lessons/:lessonId/quiz', element: <LessonQuizPage /> },
           { path: '/vocabulary/tips', element: <Navigate to="/tips#nho-tu-vung" replace /> },
           { path: '/tips', element: <LearningTipsPage /> },
           // Measure words now live on the daily vocabulary page and flashcards.

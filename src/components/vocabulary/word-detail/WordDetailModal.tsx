@@ -34,10 +34,17 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * reads only stored data (an empty tab says so), and lets a signed-in learner save the word to their decks or mark
  * it hard. A related word opens in the same modal, with a way back.
  */
-export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => void; onChanged?: () => void }> = ({
+export const WordDetailModal: React.FC<{
+  vocabularyId: number
+  onClose: () => void
+  onChanged?: () => void
+  /** Show as a panel in the page, beside the content, instead of a window over it (no backdrop, scroll lock or focus trap). */
+  inline?: boolean
+}> = ({
   vocabularyId,
   onClose,
   onChanged,
+  inline = false,
 }) => {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const [trail, setTrail] = useState<number[]>([vocabularyId])
@@ -105,6 +112,7 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
 
   // Page behind does not scroll; Esc closes (or first closes the save menu); focus stays inside and returns after.
   useEffect(() => {
+    if (inline) return
     const previous = document.activeElement as HTMLElement | null
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -113,9 +121,10 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
       document.body.style.overflow = overflow
       previous?.focus?.()
     }
-  }, [])
+  }, [inline])
 
   useEffect(() => {
+    if (inline) return
     const onKey = (e: KeyboardEvent) => {
       // The report dialog on top handles its own keys.
       if (reporting) return
@@ -141,7 +150,7 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
     // Capture, so page shortcuts (flashcard keys) never see the keys pressed in the modal.
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose, saveOpen, reporting])
+  }, [onClose, saveOpen, reporting, inline])
 
   const openWord = (id: number) => {
     if (id === currentId) return
@@ -213,16 +222,20 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
   const partOfSpeech = lm?.partOfSpeechVi || vocab?.partOfSpeech
   const level = lm?.level || vocab?.levelCode
 
-  return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4" role="presentation">
-      <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[1px]" onClick={onClose} aria-hidden />
+  const tree = (
+    <div className={inline ? 'contents' : 'fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4'} role="presentation">
+      {!inline && <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[1px]" onClick={onClose} aria-hidden />}
       <div
         ref={panel}
         role="dialog"
-        aria-modal="true"
+        aria-modal={!inline}
         aria-labelledby="word-detail-title"
         tabIndex={-1}
-        className="relative flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-[#FAF8F4] shadow-2xl outline-none sm:h-[min(86vh,50rem)] sm:max-w-2xl sm:rounded-3xl"
+        className={`relative flex w-full flex-col overflow-hidden bg-[#FAF8F4] outline-none ${
+          inline
+            ? 'h-[calc(100dvh-10.5rem)] rounded-2xl border border-border md:h-[calc(100dvh-8.5rem)]'
+            : 'h-[92dvh] rounded-t-3xl shadow-2xl sm:h-[min(86vh,50rem)] sm:max-w-2xl sm:rounded-3xl'
+        }`}
       >
         {/* Header: stays in view while the content scrolls */}
         <header className="border-b border-slate-200/80 bg-white px-5 pb-3 pt-4 sm:px-6">
@@ -408,8 +421,8 @@ export const WordDetailModal: React.FC<{ vocabularyId: number; onClose: () => vo
         />
       )}
     </div>
-    , document.body
   )
+  return inline ? tree : createPortal(tree, document.body)
 }
 
 export default WordDetailModal
