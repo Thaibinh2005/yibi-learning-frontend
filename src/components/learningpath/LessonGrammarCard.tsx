@@ -21,7 +21,7 @@ const Pinyin: React.FC<{ text: string }> = ({ text }) => (
 )
 
 /** One grammar point of a lesson: the written note when there is one, else the syllabus line with its labels in Vietnamese. */
-export const LessonGrammarCard: React.FC<{ point: GrammarPoint }> = ({ point }) => {
+export const LessonGrammarCard: React.FC<{ point: GrammarPoint; showDraft?: boolean }> = ({ point, showDraft = false }) => {
   const { note } = point
   const labels = [point.category, point.categoryName, point.subcategory].map(grammarLabel).filter(Boolean)
 
@@ -49,7 +49,7 @@ export const LessonGrammarCard: React.FC<{ point: GrammarPoint }> = ({ point }) 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h3 className="text-lg font-bold leading-snug text-slate-800">{note.title}</h3>
         {note.structure && <span className="rounded-lg bg-amber-50 px-2.5 py-1 font-mono text-sm font-semibold text-slate-700">{note.structure}</span>}
-        {note.status === 'DRAFT' && <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500" title="Nội dung đang chờ được kiểm duyệt">Bản nháp</span>}
+        {showDraft && note.status === 'DRAFT' && <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500" title="Nội dung đang chờ được kiểm duyệt">Bản nháp</span>}
       </div>
 
       {labels.length > 0 && <p className="mt-1 text-xs text-slate-400">{labels.join(' › ')}</p>}
